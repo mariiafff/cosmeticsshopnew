@@ -23,7 +23,8 @@ export class OrdersPage implements OnInit {
 
   protected readonly orderRequest: CreateOrderRequest = {
     productId: 0,
-    quantity: 1
+    quantity: 1,
+    paymentMethod: 'CARD'
   };
 
   ngOnInit(): void {
@@ -64,6 +65,7 @@ export class OrdersPage implements OnInit {
         this.successMessage.set('Order created successfully.');
         this.orderRequest.productId = 0;
         this.orderRequest.quantity = 1;
+        this.orderRequest.paymentMethod = 'CARD';
         this.isSubmitting.set(false);
       },
       error: () => {

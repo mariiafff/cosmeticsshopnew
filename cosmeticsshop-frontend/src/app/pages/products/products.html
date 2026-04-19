@@ -3,7 +3,7 @@
     <div>
       <p class="products-page__eyebrow">Catalog</p>
       <h1>Products</h1>
-      <p>Loading products from the Spring Boot backend and displaying them as a simple list.</p>
+      <p>Search the unified catalog with role-aware browsing for individual, corporate, and admin users.</p>
     </div>
 
     <a routerLink="/dashboard">Back to dashboard</a>
@@ -13,11 +13,19 @@
     <div class="products-page__results">
       <div class="products-page__results-header">
         <div>
-          <p class="products-page__eyebrow">GET /api/products</p>
+          <p class="products-page__eyebrow">GET /api/products?q=...</p>
           <h2>Product list</h2>
         </div>
 
-        <button type="button" class="products-page__refresh" (click)="loadProducts()">Refresh</button>
+        <div class="products-page__toolbar">
+          <input
+            [(ngModel)]="searchQuery"
+            type="search"
+            placeholder="Search by product or category"
+            (keyup.enter)="loadProducts()"
+          />
+          <button type="button" class="products-page__refresh" (click)="loadProducts()">Search</button>
+        </div>
       </div>
 
       @if (isLoading()) {
@@ -27,11 +35,19 @@
       } @else if (products().length === 0) {
         <p class="products-page__state">No products found yet. Start the backend and try again.</p>
       } @else {
-        <ul class="products-list">
-          <li *ngFor="let product of products()" class="product-list__item">
-            <p class="product-card__id">#{{ product.id }}</p>
+        <ul class="products-page__grid">
+          <li *ngFor="let product of products()" class="product-card">
+            <p class="product-card__id">#{{ product.id }} · {{ product.sku || 'No SKU' }}</p>
             <h3>{{ product.name }}</h3>
+            <p class="product-card__meta">
+              <span>{{ product.category || 'Uncategorized' }}</span>
+              <span>{{ product.price || 0 | currency: 'USD' }}</span>
+            </p>
             <p>{{ product.description }}</p>
+            <div class="product-card__footer">
+              <span>Stock: {{ product.stockQuantity ?? 0 }}</span>
+              <a routerLink="/orders">Order</a>
+            </div>
           </li>
         </ul>
       }

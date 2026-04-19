@@ -14,4 +14,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Long findTotalOrdersCount();
 
     List<Order> findByUserId(Long userId);
+
+    List<Order> findByStoreId(Long storeId);
+
+    @Query("""
+            select new map(function('formatdatetime', o.createdAt, 'yyyy-MM') as period, coalesce(sum(o.totalPrice), 0) as revenue)
+            from Order o
+            group by function('formatdatetime', o.createdAt, 'yyyy-MM')
+            order by function('formatdatetime', o.createdAt, 'yyyy-MM')
+            """)
+    List<java.util.Map<String, Object>> findMonthlyRevenue();
 }

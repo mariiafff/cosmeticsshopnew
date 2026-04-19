@@ -1,5 +1,6 @@
 package com.cosmeticsshop.service;
 
+import com.cosmeticsshop.exception.ResourceNotFoundException;
 import com.cosmeticsshop.model.Product;
 import com.cosmeticsshop.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -20,25 +21,43 @@ public class ProductService {
     }
 
     public Product getProductById(Long id) {
-        return productRepository.findById(id).orElse(null);
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    }
+
+    public List<Product> searchProducts(String query) {
+        if (query == null || query.isBlank()) {
+            return getAllProducts();
+        }
+        return productRepository.findByNameContainingIgnoreCaseOrCategoryContainingIgnoreCase(query, query);
     }
 
     public Product saveProduct(Product product) {
+        if (product.getSku() == null || product.getSku().isBlank()) {
+            product.setSku("SKU-" + System.currentTimeMillis());
+        }
         return productRepository.save(product);
     }
 
     public Product updateProduct(Long id, Product product) {
-        Product existingProduct = productRepository.findById(id).orElse(null);
-        if (existingProduct == null) {
-            return null;
-        }
+        Product existingProduct = getProductById(id);
 
         existingProduct.setName(product.getName());
         existingProduct.setPrice(product.getPrice());
         existingProduct.setDescription(product.getDescription());
         existingProduct.setSellerId(product.getSellerId());
+        existingProduct.setStoreId(product.getStoreId());
+        existingProduct.setSku(product.getSku());
+        existingProduct.setCategory(product.getCategory());
+        existingProduct.setStockQuantity(product.getStockQuantity());
+        existingProduct.setStatus(product.getStatus());
+        existingProduct.setAverageRating(product.getAverageRating());
 
         return productRepository.save(existingProduct);
+    }
+
+    public long countLowStockProducts() {
+        return productRepository.countByStockQuantityLessThanEqual(5);
     }
 
     public void deleteProduct(Long id) {

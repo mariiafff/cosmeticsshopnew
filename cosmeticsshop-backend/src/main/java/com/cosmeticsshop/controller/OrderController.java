@@ -1,12 +1,13 @@
 package com.cosmeticsshop.controller;
 
+import com.cosmeticsshop.dto.CreateOrderRequest;
 import com.cosmeticsshop.model.Order;
 import com.cosmeticsshop.model.User;
 import com.cosmeticsshop.repository.UserRepository;
 import com.cosmeticsshop.service.OrderService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,13 +30,17 @@ public class OrderController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'CORPORATE')")
     public List<Order> getAllOrders() {
         return orderService.getAllOrders();
     }
 
     @PostMapping
-    public Order createOrder(@RequestBody Order order) {
-        return orderService.saveOrder(order);
+    public Order createOrder(@RequestBody CreateOrderRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email).orElseThrow();
+        return orderService.createOrder(user, request);
     }
 
     @GetMapping("/{id}")

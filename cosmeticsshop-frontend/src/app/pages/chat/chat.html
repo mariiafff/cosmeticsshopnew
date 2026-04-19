@@ -12,20 +12,36 @@
   <div class="chat-page__content">
     <div class="chat-card">
       <div class="chat-card__header">
-        <h2>Messages</h2>
+        <h2>Analytics assistant</h2>
         <button type="button" (click)="loadMessages()" [disabled]="isLoading()">Refresh</button>
       </div>
 
       <p class="chat-status" *ngIf="isLoading()">Loading messages...</p>
       <p class="chat-status chat-status--error" *ngIf="!isLoading() && errorMessage()">{{ errorMessage() }}</p>
 
-      <ul class="chat-list" *ngIf="!isLoading() && !errorMessage()">
-        <li class="chat-item" *ngFor="let message of messages()">
+      <ul class="chat-list" *ngIf="!isLoading() && !errorMessage() && tips().length">
+        <li class="chat-item" *ngFor="let tip of tips()">
+          <p class="chat-item__text">{{ tip }}</p>
+        </li>
+      </ul>
+
+      <ul class="chat-list" *ngIf="responses().length">
+        <li class="chat-item" *ngFor="let response of responses()">
           <div class="chat-item__meta">
-            <span class="chat-item__sender">{{ message.sender }}</span>
-            <span class="chat-item__time">{{ message.timestamp }}</span>
+            <span class="chat-item__sender">Question</span>
+            <span>{{ response.inScope ? 'In scope' : 'Out of scope' }}</span>
           </div>
-          <p class="chat-item__text">{{ message.text }}</p>
+          <p class="chat-item__text">{{ response.question }}</p>
+          <p class="chat-item__answer">{{ response.answer }}</p>
+
+          <div class="chat-item__sql" *ngIf="response.sqlQuery">
+            <span>SQL</span>
+            <code>{{ response.sqlQuery }}</code>
+          </div>
+
+          <div class="chat-item__rows" *ngIf="response.rows.length">
+            <span>Rows returned: {{ response.rows.length }}</span>
+          </div>
         </li>
       </ul>
 
@@ -39,7 +55,7 @@
 
         <div class="chat-form__actions">
           <button type="submit" [disabled]="isSending() || !newMessage.trim()">
-            {{ isSending() ? 'Sending...' : 'Send' }}
+            {{ isSending() ? 'Running query...' : 'Ask assistant' }}
           </button>
         </div>
       </form>

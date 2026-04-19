@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { ChatMessage, ChatService, SendMessageRequest } from '../../services/chat.service';
+import { ChatResponse, ChatService, SendMessageRequest } from '../../services/chat.service';
 
 @Component({
   selector: 'app-chat-page',
@@ -14,7 +14,8 @@ import { ChatMessage, ChatService, SendMessageRequest } from '../../services/cha
 export class ChatPage {
   private readonly chatService = inject(ChatService);
 
-  protected readonly messages = signal<ChatMessage[]>([]);
+  protected readonly tips = signal<string[]>([]);
+  protected readonly responses = signal<ChatResponse[]>([]);
   protected newMessage = '';
   protected readonly isLoading = signal(false);
   protected readonly isSending = signal(false);
@@ -30,7 +31,7 @@ export class ChatPage {
 
     this.chatService.getMessages().subscribe({
       next: (messages) => {
-        this.messages.set(messages);
+        this.tips.set(messages);
         this.isLoading.set(false);
       },
       error: () => {
@@ -50,10 +51,10 @@ export class ChatPage {
     this.isSending.set(true);
     this.errorMessage.set('');
 
-    const payload: SendMessageRequest = { text };
-    this.chatService.sendMessage(payload).subscribe({
+    const payload: SendMessageRequest = { question: text };
+    this.chatService.ask(payload).subscribe({
       next: (message) => {
-        this.messages.update((messages) => [...messages, message]);
+        this.responses.update((messages) => [...messages, message]);
         this.newMessage = '';
         this.isSending.set(false);
       },

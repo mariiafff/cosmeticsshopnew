@@ -48,6 +48,15 @@
         </p>
       </label>
 
+      <label class="orders-form__field">
+        <span>Payment method</span>
+        <select [(ngModel)]="orderRequest.paymentMethod" name="paymentMethod">
+          <option value="CARD">Card</option>
+          <option value="CASH_ON_DELIVERY">Cash on delivery</option>
+          <option value="BANK_TRANSFER">Bank transfer</option>
+        </select>
+      </label>
+
       <button type="submit" [disabled]="isSubmitting() || orderForm.invalid">
         {{ isSubmitting() ? 'Creating order...' : 'Create order' }}
       </button>
@@ -74,15 +83,7 @@
         <li class="orders-card" *ngFor="let order of orders()">
           <div class="orders-card__row">
             <span class="orders-card__label">Order</span>
-            <strong>#{{ order.id }}</strong>
-          </div>
-          <div class="orders-card__row">
-            <span class="orders-card__label">Product ID</span>
-            <span>{{ order.productId }}</span>
-          </div>
-          <div class="orders-card__row">
-            <span class="orders-card__label">Quantity</span>
-            <span>{{ order.quantity }}</span>
+            <strong>{{ order.orderNumber || ('#' + order.id) }}</strong>
           </div>
           <div class="orders-card__row" *ngIf="order.totalPrice !== undefined">
             <span class="orders-card__label">Total</span>
@@ -91,6 +92,14 @@
           <div class="orders-card__row" *ngIf="order.status">
             <span class="orders-card__label">Status</span>
             <span>{{ order.status }}</span>
+          </div>
+          <div class="orders-card__row" *ngIf="order.shipmentStatus">
+            <span class="orders-card__label">Shipment</span>
+            <span>{{ order.shipmentStatus }}</span>
+          </div>
+          <div class="orders-card__row" *ngIf="order.paymentMethod">
+            <span class="orders-card__label">Payment</span>
+            <span>{{ order.paymentMethod }}</span>
           </div>
           <div class="orders-card__row" *ngIf="order.createdAt">
             <span class="orders-card__label">Created</span>

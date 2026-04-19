@@ -100,6 +100,32 @@
   line-height: 1.6;
 }
 
+.chat-item__answer {
+  margin: 0.8rem 0 0;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.chat-item__sql,
+.chat-item__rows {
+  margin-top: 0.8rem;
+}
+
+.chat-item__sql span,
+.chat-item__rows span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #5d7185;
+}
+
+.chat-item__sql code {
+  display: block;
+  white-space: pre-wrap;
+  padding: 0.85rem;
+  border-radius: 0.9rem;
+  background: #eaf1f8;
+}
+
 .chat-form {
   margin-top: 1.5rem;
   display: grid;

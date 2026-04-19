@@ -6,16 +6,18 @@ import { environment } from '../../environments/environment';
 
 export interface Order {
   id: number;
-  productId: number;
-  quantity: number;
+  orderNumber?: string;
   totalPrice?: number;
   status?: string;
+  shipmentStatus?: string;
+  paymentMethod?: string;
   createdAt?: string;
 }
 
 export interface CreateOrderRequest {
   productId: number;
   quantity: number;
+  paymentMethod?: string;
 }
 
 @Injectable({

@@ -10,15 +10,18 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
-  [key: string]: unknown;
+  role: string;
+  city?: string;
+  membershipType?: string;
 }
 
 export interface AuthResponse {
   token: string;
-  type?: string;
+  refreshToken?: string;
   email?: string;
   role?: string;
 }
@@ -39,21 +42,21 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiBaseUrl}/auth`;
   private readonly tokenKey = 'auth_token';
+  private readonly refreshTokenKey = 'refresh_token';
 
   login(payload: LoginRequest): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${this.apiUrl}/login`, payload)
-      .pipe(tap((response) => this.saveToken(response.token)));
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, payload).pipe(tap((response) => this.saveAuth(response)));
   }
 
   register(payload: RegisterRequest): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${this.apiUrl}/register`, payload)
-      .pipe(tap((response) => this.saveToken(response.token)));
+      .pipe(tap((response) => this.saveAuth(response)));
   }
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
   }
 
   getToken(): string | null {
@@ -77,11 +80,39 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    return !!this.getToken() && !this.isTokenExpired();
   }
 
-  private saveToken(token: string): void {
-    localStorage.setItem(this.tokenKey, token);
+  getUserEmail(): string | null {
+    const token = this.getToken();
+    if (!token) {
+      return null;
+    }
+
+    const payload = this.decodeJwt(token);
+    return typeof payload.sub === 'string' ? payload.sub : null;
+  }
+
+  private saveAuth(response: AuthResponse): void {
+    localStorage.setItem(this.tokenKey, response.token);
+    if (response.refreshToken) {
+      localStorage.setItem(this.refreshTokenKey, response.refreshToken);
+    }
+  }
+
+  private isTokenExpired(): boolean {
+    const token = this.getToken();
+    if (!token) {
+      return true;
+    }
+
+    const payload = this.decodeJwt(token);
+    const exp = typeof payload.exp === 'number' ? payload.exp : null;
+    if (!exp) {
+      return false;
+    }
+
+    return Date.now() >= exp * 1000;
   }
 
   private decodeJwt(token: string): JwtPayload {

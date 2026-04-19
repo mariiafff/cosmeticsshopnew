@@ -3,36 +3,111 @@
   <div class="dashboard-page__glow dashboard-page__glow--right"></div>
 
   <header class="dashboard-page__hero">
-    <p class="dashboard-page__eyebrow">Cosmetics shop admin</p>
-    <h1>Dashboard</h1>
+    <p class="dashboard-page__eyebrow">E-commerce analytics platform</p>
+    <h1>Role-based Dashboard</h1>
     <p class="dashboard-page__summary">
-      Manage products, watch daily sales, and keep the storefront ready for every launch.
+      Spring Boot + Angular storefront with role-based analytics, order operations, review support, and a Text2SQL-style analytics assistant.
     </p>
 
     <nav class="dashboard-page__actions" aria-label="Primary navigation">
+      <a routerLink="/orders">Orders</a>
       <a routerLink="/products">Products</a>
+      <a routerLink="/chat">AI Analytics Chat</a>
       <a routerLink="/login">Login</a>
       <a routerLink="/register">Register</a>
     </nav>
   </header>
 
-  <section class="dashboard-page__grid">
-    <article class="dashboard-card">
-      <span class="dashboard-card__label">Orders today</span>
-      <strong>128</strong>
-      <p>Up 14% from yesterday after the spring skincare promotion.</p>
-    </article>
+  @if (!overview() && !isLoading()) {
+    <section class="dashboard-page__grid">
+      <article class="dashboard-card">
+        <span class="dashboard-card__label">Active role</span>
+        <strong>{{ role() }}</strong>
+        <p>Sign in to load analytics scoped to your role: individual, corporate, or admin.</p>
+      </article>
 
-    <article class="dashboard-card">
-      <span class="dashboard-card__label">Low stock alerts</span>
-      <strong>7</strong>
-      <p>Sheet masks, rose toner, and SPF serum need restocking soon.</p>
-    </article>
+      <article class="dashboard-card">
+        <span class="dashboard-card__label">Project scope</span>
+        <strong>RBAC + Analytics</strong>
+        <p>Products, orders, shipments, reviews, store management, and AI chat are connected through the backend API.</p>
+      </article>
 
-    <article class="dashboard-card">
-      <span class="dashboard-card__label">Top collection</span>
-      <strong>Glow Ritual</strong>
-      <p>Customers are spending the most time on bundled hydration sets.</p>
-    </article>
-  </section>
+      <article class="dashboard-card">
+        <span class="dashboard-card__label">Demo users</span>
+        <strong>3 seeded accounts</strong>
+        <p>Admin, corporate manager, and shopper accounts are seeded automatically in the H2 demo database.</p>
+      </article>
+    </section>
+  }
+
+  @if (isLoading()) {
+    <p class="dashboard-page__state">Loading analytics...</p>
+  }
+
+  @if (errorMessage()) {
+    <p class="dashboard-page__state dashboard-page__state--error">{{ errorMessage() }}</p>
+  }
+
+  @if (overview(); as overview) {
+    <section class="dashboard-page__grid">
+      <article class="dashboard-card">
+        <span class="dashboard-card__label">Total revenue</span>
+        <strong>{{ overview.totalRevenue | currency: 'USD' }}</strong>
+        <p>{{ overview.role }} role visibility with multi-tenant analytics scope.</p>
+      </article>
+
+      <article class="dashboard-card">
+        <span class="dashboard-card__label">Orders</span>
+        <strong>{{ overview.totalOrders }}</strong>
+        <p>Live order count from the unified order and order-item model.</p>
+      </article>
+
+      <article class="dashboard-card">
+        <span class="dashboard-card__label">Low stock</span>
+        <strong>{{ overview.lowStockProducts }}</strong>
+        <p>Products at or below five units are surfaced for replenishment alerts.</p>
+      </article>
+    </section>
+
+    <section class="dashboard-panel-grid">
+      <article class="dashboard-panel">
+        <div class="dashboard-panel__header">
+          <div>
+            <p class="dashboard-page__eyebrow">Top products</p>
+            <h2>Best sellers</h2>
+          </div>
+        </div>
+        <ul class="dashboard-list">
+          @for (product of overview.topProducts; track product.productId) {
+            <li>
+              <strong>{{ product.productName }}</strong>
+              <span>{{ product.totalQuantitySold }} units</span>
+            </li>
+          }
+        </ul>
+      </article>
+
+      <article class="dashboard-panel">
+        <div class="dashboard-panel__header">
+          <div>
+            <p class="dashboard-page__eyebrow">Category share</p>
+            <h2>Revenue mix</h2>
+          </div>
+        </div>
+        <ul class="dashboard-bars">
+          @for (entry of overview.categoryShare; track $index) {
+            <li>
+              <div class="dashboard-bars__label">
+                <span>{{ entry['category'] }}</span>
+                <strong>{{ entry['revenue'] | currency: 'USD' }}</strong>
+              </div>
+              <div class="dashboard-bars__track">
+              <div class="dashboard-bars__fill" [style.width.%]="toWidth(entry['units'])"></div>
+              </div>
+            </li>
+          }
+        </ul>
+      </article>
+    </section>
+  }
 </section>

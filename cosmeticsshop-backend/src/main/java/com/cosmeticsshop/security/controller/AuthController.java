@@ -1,5 +1,6 @@
 package com.cosmeticsshop.security.controller;
 
+import com.cosmeticsshop.dto.RefreshTokenRequest;
 import com.cosmeticsshop.model.User;
 import com.cosmeticsshop.repository.UserRepository;
 import com.cosmeticsshop.security.dto.AuthResponse;
@@ -54,9 +55,10 @@ public class AuthController {
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
-        String token = jwtUtil.generateToken(userDetails);
+        String token = jwtUtil.generateAccessToken(userDetails);
+        String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        return ResponseEntity.ok(new AuthResponse(token, user.getEmail(), user.getRole()));
+        return ResponseEntity.ok(new AuthResponse(token, refreshToken, user.getEmail(), user.getRole()));
     }
 
     @PostMapping("/register")
@@ -75,9 +77,25 @@ public class AuthController {
         User savedUser = userRepository.save(user);
 
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(savedUser.getEmail());
-        String token = jwtUtil.generateToken(userDetails);
+        String token = jwtUtil.generateAccessToken(userDetails);
+        String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new AuthResponse(token, savedUser.getEmail(), savedUser.getRole()));
+                .body(new AuthResponse(token, refreshToken, savedUser.getEmail(), savedUser.getRole()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshTokenRequest request) {
+        jwtUtil.validateRefreshToken(request.getRefreshToken());
+        String email = jwtUtil.extractEmail(request.getRefreshToken());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+        return ResponseEntity.ok(new AuthResponse(
+                jwtUtil.generateAccessToken(userDetails),
+                jwtUtil.generateRefreshToken(userDetails),
+                user.getEmail(),
+                user.getRole()
+        ));
     }
 }

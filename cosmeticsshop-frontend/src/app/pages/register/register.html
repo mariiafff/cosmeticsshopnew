@@ -1,8 +1,65 @@
 <section class="auth-page">
-  <div class="auth-card">
+  <form class="auth-card auth-card--wide" #registerForm="ngForm" (ngSubmit)="register(registerForm)" novalidate>
     <p class="auth-card__eyebrow">New account</p>
     <h1>Register</h1>
-    <p>Create shopper or admin registration flows here when you connect forms and API calls.</p>
-    <a routerLink="/dashboard">Back to dashboard</a>
-  </div>
+    <p class="auth-card__text">Create an individual or corporate account with the JWT-secured Spring Boot API.</p>
+
+    <div class="auth-grid">
+      <label class="auth-field">
+        <span>First name</span>
+        <input [(ngModel)]="registration.firstName" name="firstName" required />
+      </label>
+
+      <label class="auth-field">
+        <span>Last name</span>
+        <input [(ngModel)]="registration.lastName" name="lastName" required />
+      </label>
+    </div>
+
+    <label class="auth-field">
+      <span>Email</span>
+      <input [(ngModel)]="registration.email" name="email" type="email" required email />
+    </label>
+
+    <div class="auth-grid">
+      <label class="auth-field">
+        <span>Password</span>
+        <input [(ngModel)]="registration.password" name="password" type="password" minlength="6" required />
+      </label>
+
+      <label class="auth-field">
+        <span>Role</span>
+        <select [(ngModel)]="registration.role" name="role">
+          <option value="INDIVIDUAL">Individual</option>
+          <option value="CORPORATE">Corporate</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="auth-grid">
+      <label class="auth-field">
+        <span>City</span>
+        <input [(ngModel)]="registration.city" name="city" />
+      </label>
+
+      <label class="auth-field">
+        <span>Membership</span>
+        <select [(ngModel)]="registration.membershipType" name="membershipType">
+          <option value="SILVER">Silver</option>
+          <option value="GOLD">Gold</option>
+          <option value="PLATINUM">Platinum</option>
+        </select>
+      </label>
+    </div>
+
+    <button type="submit" [disabled]="isSubmitting()">
+      {{ isSubmitting() ? 'Creating account...' : 'Create account' }}
+    </button>
+
+    @if (errorMessage()) {
+      <p class="auth-message auth-message--error">{{ errorMessage() }}</p>
+    }
+
+    <a routerLink="/login">Already registered? Login</a>
+  </form>
 </section>

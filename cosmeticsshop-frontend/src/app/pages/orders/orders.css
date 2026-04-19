@@ -76,7 +76,8 @@
   font-weight: 600;
 }
 
-.orders-form__field input {
+.orders-form__field input,
+.orders-form__field select {
   width: 100%;
   padding: 0.85rem 1rem;
   border: 1px solid #dbe4ea;

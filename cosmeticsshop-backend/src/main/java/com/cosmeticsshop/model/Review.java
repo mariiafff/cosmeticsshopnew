@@ -19,6 +19,11 @@ public class Review {
     @Column(length = 1000)
     private String comment;
 
+    @Column(length = 160)
+    private String title;
+
+    private Integer helpfulVotes = 0;
+    private Integer totalVotes = 0;
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Review() {}
@@ -44,6 +49,15 @@ public class Review {
 
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public Integer getHelpfulVotes() { return helpfulVotes; }
+    public void setHelpfulVotes(Integer helpfulVotes) { this.helpfulVotes = helpfulVotes; }
+
+    public Integer getTotalVotes() { return totalVotes; }
+    public void setTotalVotes(Integer totalVotes) { this.totalVotes = totalVotes; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

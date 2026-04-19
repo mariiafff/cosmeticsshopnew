@@ -30,7 +30,7 @@ export const routes: Routes = [
     path: 'orders',
     loadComponent: () => import('./pages/orders/orders').then((m) => m.OrdersPage),
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['USER', 'ADMIN'] }
+    data: { roles: ['INDIVIDUAL', 'CORPORATE', 'ADMIN'] }
   },
   {
     path: 'chat',

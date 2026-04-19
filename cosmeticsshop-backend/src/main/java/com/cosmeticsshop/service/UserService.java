@@ -1,5 +1,6 @@
 package com.cosmeticsshop.service;
 
+import com.cosmeticsshop.exception.ResourceNotFoundException;
 import com.cosmeticsshop.model.User;
 import com.cosmeticsshop.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,11 +24,23 @@ public class UserService {
     }
 
     public User getUserById(Long id) {
-        return userRepository.findById(id).orElse(null);
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+    }
+
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
     }
 
     public User saveUser(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return userRepository.save(user);
+    }
+
+    public User updateUserStatus(Long id, String status) {
+        User user = getUserById(id);
+        user.setStatus(status);
         return userRepository.save(user);
     }
 

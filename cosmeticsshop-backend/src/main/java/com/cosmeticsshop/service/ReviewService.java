@@ -1,5 +1,6 @@
 package com.cosmeticsshop.service;
 
+import com.cosmeticsshop.exception.ResourceNotFoundException;
 import com.cosmeticsshop.model.Review;
 import com.cosmeticsshop.repository.ReviewRepository;
 import org.springframework.stereotype.Service;
@@ -19,8 +20,13 @@ public class ReviewService {
         return reviewRepository.findAll();
     }
 
+    public List<Review> getReviewsByProductId(Long productId) {
+        return reviewRepository.findByProductId(productId);
+    }
+
     public Review getReviewById(Long id) {
-        return reviewRepository.findById(id).orElse(null);
+        return reviewRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found: " + id));
     }
 
     public Review saveReview(Review review) {
@@ -28,15 +34,15 @@ public class ReviewService {
     }
 
     public Review updateReview(Long id, Review review) {
-        Review existingReview = reviewRepository.findById(id).orElse(null);
-        if (existingReview == null) {
-            return null;
-        }
+        Review existingReview = getReviewById(id);
 
         existingReview.setProductId(review.getProductId());
         existingReview.setUserId(review.getUserId());
         existingReview.setRating(review.getRating());
         existingReview.setComment(review.getComment());
+        existingReview.setTitle(review.getTitle());
+        existingReview.setHelpfulVotes(review.getHelpfulVotes());
+        existingReview.setTotalVotes(review.getTotalVotes());
 
         return reviewRepository.save(existingReview);
     }

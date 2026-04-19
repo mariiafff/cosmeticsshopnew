@@ -4,15 +4,17 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export interface ChatMessage {
-  id: number;
-  sender: string;
-  text: string;
-  timestamp: string;
+export interface ChatResponse {
+  question: string;
+  inScope: boolean;
+  sqlQuery: string;
+  answer: string;
+  visualizationHint: string;
+  rows: Record<string, unknown>[];
 }
 
 export interface SendMessageRequest {
-  text: string;
+  question: string;
 }
 
 @Injectable({
@@ -22,11 +24,11 @@ export class ChatService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiBaseUrl}/chat`;
 
-  getMessages(): Observable<ChatMessage[]> {
-    return this.http.get<ChatMessage[]>(`${this.apiUrl}/messages`);
+  getMessages(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/messages`);
   }
 
-  sendMessage(payload: SendMessageRequest): Observable<ChatMessage> {
-    return this.http.post<ChatMessage>(`${this.apiUrl}/send`, payload);
+  ask(payload: SendMessageRequest): Observable<ChatResponse> {
+    return this.http.post<ChatResponse>(`${this.apiUrl}/ask`, payload);
   }
 }

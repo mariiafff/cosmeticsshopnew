@@ -22,4 +22,17 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             order by sum(oi.quantity) desc
             """)
     List<TopProductResponse> findTopSellingProducts();
+
+    @Query("""
+            select new map(
+                coalesce(p.category, 'Uncategorized') as category,
+                sum(oi.quantity * oi.price) as revenue,
+                sum(oi.quantity) as units
+            )
+            from OrderItem oi
+            join oi.product p
+            group by p.category
+            order by sum(oi.quantity * oi.price) desc
+            """)
+    List<java.util.Map<String, Object>> findCategoryRevenue();
 }
