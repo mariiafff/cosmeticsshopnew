@@ -1,0 +1,103 @@
+<section class="orders-page">
+  <header class="orders-page__header">
+    <div>
+      <p class="orders-page__eyebrow">Orders</p>
+      <h1>My Orders</h1>
+      <p>Review your recent orders and create a new one with JWT-backed requests.</p>
+    </div>
+
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <div class="orders-page__content">
+    <form class="orders-form" #orderForm="ngForm" (ngSubmit)="createOrder(orderForm)" novalidate>
+      <div class="orders-form__header">
+        <p class="orders-page__eyebrow">Create order</p>
+        <h2>New order</h2>
+      </div>
+
+      <label class="orders-form__field">
+        <span>Product ID</span>
+        <input
+          [(ngModel)]="orderRequest.productId"
+          #productIdInput="ngModel"
+          name="productId"
+          type="number"
+          min="1"
+          placeholder="1"
+          required
+        />
+        <p class="field-error" *ngIf="productIdInput.invalid && (productIdInput.touched || orderForm.submitted)">
+          Product ID is required and must be greater than 0.
+        </p>
+      </label>
+
+      <label class="orders-form__field">
+        <span>Quantity</span>
+        <input
+          [(ngModel)]="orderRequest.quantity"
+          #quantityInput="ngModel"
+          name="quantity"
+          type="number"
+          min="1"
+          placeholder="1"
+          required
+        />
+        <p class="field-error" *ngIf="quantityInput.invalid && (quantityInput.touched || orderForm.submitted)">
+          Quantity is required and must be at least 1.
+        </p>
+      </label>
+
+      <button type="submit" [disabled]="isSubmitting() || orderForm.invalid">
+        {{ isSubmitting() ? 'Creating order...' : 'Create order' }}
+      </button>
+
+      <p class="orders-page__message orders-page__message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
+      <p class="orders-page__message orders-page__message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+    </form>
+
+    <section class="orders-list">
+      <div class="orders-list__header">
+        <div>
+          <p class="orders-page__eyebrow">GET /api/orders/my</p>
+          <h2>Your orders</h2>
+        </div>
+
+        <button type="button" class="orders-page__refresh" (click)="loadOrders()">Refresh</button>
+      </div>
+
+      <p class="orders-page__state" *ngIf="isLoading()">Loading your orders...</p>
+      <p class="orders-page__state orders-page__state--error" *ngIf="!isLoading() && errorMessage()">{{ errorMessage() }}</p>
+      <p class="orders-page__state" *ngIf="!isLoading() && !errorMessage() && orders().length === 0">No orders yet. Create one to see it here.</p>
+
+      <ul class="orders-list__items" *ngIf="!isLoading() && !errorMessage() && orders().length > 0">
+        <li class="orders-card" *ngFor="let order of orders()">
+          <div class="orders-card__row">
+            <span class="orders-card__label">Order</span>
+            <strong>#{{ order.id }}</strong>
+          </div>
+          <div class="orders-card__row">
+            <span class="orders-card__label">Product ID</span>
+            <span>{{ order.productId }}</span>
+          </div>
+          <div class="orders-card__row">
+            <span class="orders-card__label">Quantity</span>
+            <span>{{ order.quantity }}</span>
+          </div>
+          <div class="orders-card__row" *ngIf="order.totalPrice !== undefined">
+            <span class="orders-card__label">Total</span>
+            <span>{{ order.totalPrice | currency }}</span>
+          </div>
+          <div class="orders-card__row" *ngIf="order.status">
+            <span class="orders-card__label">Status</span>
+            <span>{{ order.status }}</span>
+          </div>
+          <div class="orders-card__row" *ngIf="order.createdAt">
+            <span class="orders-card__label">Created</span>
+            <span>{{ order.createdAt }}</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </div>
+</section>

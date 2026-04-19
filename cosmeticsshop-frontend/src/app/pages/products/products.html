@@ -1,0 +1,40 @@
+<section class="products-page">
+  <header class="products-page__header">
+    <div>
+      <p class="products-page__eyebrow">Catalog</p>
+      <h1>Products</h1>
+      <p>Loading products from the Spring Boot backend and displaying them as a simple list.</p>
+    </div>
+
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <section class="products-page__layout products-page__layout--simple">
+    <div class="products-page__results">
+      <div class="products-page__results-header">
+        <div>
+          <p class="products-page__eyebrow">GET /api/products</p>
+          <h2>Product list</h2>
+        </div>
+
+        <button type="button" class="products-page__refresh" (click)="loadProducts()">Refresh</button>
+      </div>
+
+      @if (isLoading()) {
+        <p class="products-page__state">Loading products...</p>
+      } @else if (errorMessage()) {
+        <p class="products-page__state products-page__state--error">{{ errorMessage() }}</p>
+      } @else if (products().length === 0) {
+        <p class="products-page__state">No products found yet. Start the backend and try again.</p>
+      } @else {
+        <ul class="products-list">
+          <li *ngFor="let product of products()" class="product-list__item">
+            <p class="product-card__id">#{{ product.id }}</p>
+            <h3>{{ product.name }}</h3>
+            <p>{{ product.description }}</p>
+          </li>
+        </ul>
+      }
+    </div>
+  </section>
+</section>

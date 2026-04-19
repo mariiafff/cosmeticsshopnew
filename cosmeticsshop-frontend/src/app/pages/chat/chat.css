@@ -1,0 +1,137 @@
+:host {
+  display: block;
+}
+
+.chat-page {
+  min-height: 100vh;
+  padding: 2.5rem 1.5rem;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef4fa 100%);
+  color: #1f3040;
+}
+
+.chat-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto 1.5rem;
+}
+
+.chat-page__eyebrow {
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  color: #4a6984;
+}
+
+.chat-page__header h1 {
+  margin: 0 0 0.6rem;
+}
+
+.chat-page__header a {
+  color: #2a5a83;
+}
+
+.chat-page__content {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.chat-card {
+  padding: 1.6rem;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 45px rgba(39, 60, 79, 0.08);
+}
+
+.chat-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chat-card__header h2 {
+  margin: 0;
+}
+
+.chat-status {
+  margin: 0 0 1rem;
+  color: #4a6a83;
+}
+
+.chat-status--error {
+  color: #b14444;
+}
+
+.chat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.chat-item {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: #f2f6fb;
+  border: 1px solid #dce7f1;
+}
+
+.chat-item__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: #5d7185;
+}
+
+.chat-item__sender {
+  font-weight: 700;
+}
+
+.chat-item__text {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.chat-form {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.chat-form textarea {
+  width: 100%;
+  border: 1px solid #dbe4ec;
+  border-radius: 1rem;
+  padding: 1rem;
+  font: inherit;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.chat-form__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.chat-form button {
+  padding: 0.95rem 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: #2a5a83;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chat-form button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}

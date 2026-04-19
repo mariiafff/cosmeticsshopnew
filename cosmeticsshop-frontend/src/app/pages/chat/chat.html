@@ -1,0 +1,48 @@
+<section class="chat-page">
+  <header class="chat-page__header">
+    <div>
+      <p class="chat-page__eyebrow">Chat</p>
+      <h1>Support chat</h1>
+      <p>Send messages to the backend and view the chat history in real time.</p>
+    </div>
+
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <div class="chat-page__content">
+    <div class="chat-card">
+      <div class="chat-card__header">
+        <h2>Messages</h2>
+        <button type="button" (click)="loadMessages()" [disabled]="isLoading()">Refresh</button>
+      </div>
+
+      <p class="chat-status" *ngIf="isLoading()">Loading messages...</p>
+      <p class="chat-status chat-status--error" *ngIf="!isLoading() && errorMessage()">{{ errorMessage() }}</p>
+
+      <ul class="chat-list" *ngIf="!isLoading() && !errorMessage()">
+        <li class="chat-item" *ngFor="let message of messages()">
+          <div class="chat-item__meta">
+            <span class="chat-item__sender">{{ message.sender }}</span>
+            <span class="chat-item__time">{{ message.timestamp }}</span>
+          </div>
+          <p class="chat-item__text">{{ message.text }}</p>
+        </li>
+      </ul>
+
+      <form class="chat-form" (ngSubmit)="sendMessage()">
+        <textarea
+          [(ngModel)]="newMessage"
+          name="message"
+          rows="3"
+          placeholder="Type your message here..."
+        ></textarea>
+
+        <div class="chat-form__actions">
+          <button type="submit" [disabled]="isSending() || !newMessage.trim()">
+            {{ isSending() ? 'Sending...' : 'Send' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

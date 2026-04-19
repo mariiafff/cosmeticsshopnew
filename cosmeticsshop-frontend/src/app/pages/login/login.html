@@ -1,0 +1,57 @@
+<section class="auth-page">
+  <form class="auth-card" #loginForm="ngForm" (ngSubmit)="login(loginForm)" novalidate>
+    <p class="auth-card__eyebrow">Welcome back</p>
+    <h1>Login</h1>
+    <p class="auth-card__text">
+      Enter your email and password to sign in. If successful, you will be redirected to the products page.
+    </p>
+
+    <label class="auth-field">
+      <span>Email</span>
+      <input
+        [(ngModel)]="credentials.email"
+        #emailInput="ngModel"
+        name="email"
+        type="email"
+        placeholder="student@example.com"
+        required
+        email
+      />
+      @if (emailInput.invalid && (emailInput.touched || loginForm.submitted)) {
+        <p class="field-error">
+          @if (emailInput.errors?.['required']) { Email is required. }
+          @if (emailInput.errors?.['email']) { Enter a valid email address. }
+        </p>
+      }
+    </label>
+
+    <label class="auth-field">
+      <span>Password</span>
+      <input
+        [(ngModel)]="credentials.password"
+        #passwordInput="ngModel"
+        name="password"
+        type="password"
+        placeholder="password123"
+        required
+        minlength="6"
+      />
+      @if (passwordInput.invalid && (passwordInput.touched || loginForm.submitted)) {
+        <p class="field-error">
+          @if (passwordInput.errors?.['required']) { Password is required. }
+          @if (passwordInput.errors?.['minlength']) { Password must be at least 6 characters. }
+        </p>
+      }
+    </label>
+
+    <button type="submit" [disabled]="isSubmitting() || loginForm.invalid">
+      {{ isSubmitting() ? 'Logging in...' : 'Login' }}
+    </button>
+
+    @if (errorMessage()) {
+      <p class="auth-message auth-message--error">{{ errorMessage() }}</p>
+    }
+
+    <a routerLink="/products">Continue to products</a>
+  </form>
+</section>
