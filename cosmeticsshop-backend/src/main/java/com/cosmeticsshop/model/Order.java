@@ -1,10 +1,13 @@
 package com.cosmeticsshop.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -13,8 +16,8 @@ import java.time.LocalDateTime;
 @Table(
         name = "orders",
         indexes = {
-                @Index(name = "idx_order_user", columnList = "userId"),
-                @Index(name = "idx_order_store", columnList = "storeId"),
+                @Index(name = "idx_order_user", columnList = "user_id"),
+                @Index(name = "idx_order_store", columnList = "store_id"),
                 @Index(name = "idx_order_status", columnList = "status"),
                 @Index(name = "idx_order_created", columnList = "createdAt")
         }
@@ -25,8 +28,14 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
+
     private double totalPrice;
     private String orderNumber;
     private String paymentMethod;
@@ -40,19 +49,19 @@ public class Order {
 
     public Order() {}
 
-    public Order(Long userId, double totalPrice) {
-        this.userId = userId;
+    public Order(User user, double totalPrice) {
+        this.user = user;
         this.totalPrice = totalPrice;
     }
 
     // getters and setters
     public Long getId() { return id; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
-    public Long getStoreId() { return storeId; }
-    public void setStoreId(Long storeId) { this.storeId = storeId; }
+    public Store getStore() { return store; }
+    public void setStore(Store store) { this.store = store; }
 
     public double getTotalPrice() { return totalPrice; }
     public void setTotalPrice(double totalPrice) { this.totalPrice = totalPrice; }

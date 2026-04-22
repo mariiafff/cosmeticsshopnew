@@ -28,4 +28,8 @@ public class ShipmentService {
     public Shipment save(Shipment shipment) {
         return shipmentRepository.save(shipment);
     }
+
+    public void deleteShipment(Long id) {
+        shipmentRepository.deleteById(id);
+    }
 }

@@ -62,8 +62,8 @@ public class OrderService {
         }
 
         Order order = new Order();
-        order.setUserId(user.getId());
-        order.setStoreId(product.getStoreId());
+        order.setUser(user);
+        order.setStore(product.getStore());
         order.setOrderNumber("ORD-" + System.currentTimeMillis());
         order.setPaymentMethod(request.getPaymentMethod() == null ? "CARD" : request.getPaymentMethod());
         order.setTotalPrice(product.getPrice() * request.getQuantity());
@@ -82,7 +82,7 @@ public class OrderService {
         productRepository.save(product);
 
         Shipment shipment = new Shipment();
-        shipment.setOrderId(savedOrder.getId());
+        shipment.setOrder(savedOrder);
         shipment.setTrackingNumber("TRK-" + savedOrder.getId());
         shipment.setModeOfShipment("Air");
         shipment.setWarehouseBlock("A");
@@ -96,8 +96,8 @@ public class OrderService {
     public Order updateOrder(Long id, Order order) {
         Order existingOrder = getOrderById(id);
 
-        existingOrder.setUserId(order.getUserId());
-        existingOrder.setStoreId(order.getStoreId());
+        existingOrder.setUser(order.getUser());
+        existingOrder.setStore(order.getStore());
         existingOrder.setTotalPrice(order.getTotalPrice());
         existingOrder.setStatus(order.getStatus());
         existingOrder.setFulfillmentStatus(order.getFulfillmentStatus());
@@ -113,10 +113,10 @@ public class OrderService {
     }
 
     public List<Order> getOrdersByUserId(Long userId) {
-        return orderRepository.findByUserId(userId);
+        return orderRepository.findByUser_Id(userId);
     }
 
     public List<Order> getOrdersByStoreId(Long storeId) {
-        return orderRepository.findByStoreId(storeId);
+        return orderRepository.findByStore_Id(storeId);
     }
 }

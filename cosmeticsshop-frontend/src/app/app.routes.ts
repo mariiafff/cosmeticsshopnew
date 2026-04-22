@@ -33,6 +33,36 @@ export const routes: Routes = [
     data: { roles: ['INDIVIDUAL', 'CORPORATE', 'ADMIN'] }
   },
   {
+    path: 'manage/products',
+    loadComponent: () => import('./pages/manage-products/manage-products').then((m) => m.ManageProductsPage),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['CORPORATE', 'ADMIN'] }
+  },
+  {
+    path: 'manage/orders',
+    loadComponent: () => import('./pages/manage-orders/manage-orders').then((m) => m.ManageOrdersPage),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['CORPORATE', 'ADMIN'] }
+  },
+  {
+    path: 'admin/users',
+    loadComponent: () => import('./pages/admin-users/admin-users').then((m) => m.AdminUsersPage),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ADMIN'] }
+  },
+  {
+    path: 'admin/stores',
+    loadComponent: () => import('./pages/admin-stores/admin-stores').then((m) => m.AdminStoresPage),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ADMIN'] }
+  },
+  {
+    path: 'admin/categories',
+    loadComponent: () => import('./pages/admin-categories/admin-categories').then((m) => m.AdminCategoriesPage),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['ADMIN'] }
+  },
+  {
     path: 'chat',
     loadComponent: () => import('./pages/chat/chat').then((m) => m.ChatPage),
     canActivate: [AuthGuard]

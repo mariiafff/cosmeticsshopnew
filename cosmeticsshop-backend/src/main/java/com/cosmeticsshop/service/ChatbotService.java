@@ -69,11 +69,12 @@ public class ChatbotService {
         }
         if (normalized.contains("category")) {
             return """
-                    select p.category as category, round(sum(o.total_price), 2) as revenue, count(distinct o.id) as orders
+                    select coalesce(c.name, 'Uncategorized') as category, round(sum(o.total_price), 2) as revenue, count(distinct o.id) as orders
                     from orders o
                     join order_items oi on oi.order_id = o.id
                     join products p on p.id = oi.product_id
-                    group by p.category
+                    left join categories c on c.id = p.category_id
+                    group by c.name
                     order by revenue desc
                     """;
         }

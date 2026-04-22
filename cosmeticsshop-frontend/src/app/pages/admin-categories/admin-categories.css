@@ -1,0 +1,19 @@
+/* Admin categories page styling placeholder */
+.admin-categories-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-categories-page th,
+.admin-categories-page td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+.admin-categories-page label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+.admin-categories-page input,
+.admin-categories-page textarea {
+  width: 100%;
+  padding: 0.5rem;
+}

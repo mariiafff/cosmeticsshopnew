@@ -1,11 +1,14 @@
 package com.cosmeticsshop.model;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -44,6 +47,9 @@ public class User {
     private String status = "ACTIVE";
 
     private Long storeId;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private CustomerProfile customerProfile;
 
     @Column(length = 100)
     private String city;
@@ -84,6 +90,14 @@ public class User {
 
     public Long getStoreId() { return storeId; }
     public void setStoreId(Long storeId) { this.storeId = storeId; }
+
+    public CustomerProfile getCustomerProfile() {
+        return customerProfile;
+    }
+
+    public void setCustomerProfile(CustomerProfile customerProfile) {
+        this.customerProfile = customerProfile;
+    }
 
     public String getCity() { return city; }
     public void setCity(String city) { this.city = city; }

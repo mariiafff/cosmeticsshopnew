@@ -11,8 +11,13 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long productId;
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     private int rating;
 
@@ -28,9 +33,9 @@ public class Review {
 
     public Review() {}
 
-    public Review(Long productId, Long userId, int rating, String comment) {
-        this.productId = productId;
-        this.userId = userId;
+    public Review(Product product, User user, int rating, String comment) {
+        this.product = product;
+        this.user = user;
         this.rating = rating;
         this.comment = comment;
     }
@@ -38,11 +43,11 @@ public class Review {
     // getters and setters
     public Long getId() { return id; }
 
-    public Long getProductId() { return productId; }
-    public void setProductId(Long productId) { this.productId = productId; }
+    public Product getProduct() { return product; }
+    public void setProduct(Product product) { this.product = product; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }

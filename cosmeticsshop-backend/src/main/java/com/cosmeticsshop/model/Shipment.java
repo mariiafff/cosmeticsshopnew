@@ -2,10 +2,13 @@ package com.cosmeticsshop.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -14,7 +17,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "shipments",
         indexes = {
-                @Index(name = "idx_shipment_order", columnList = "orderId", unique = true),
+                @Index(name = "idx_shipment_order", columnList = "order_id", unique = true),
                 @Index(name = "idx_shipment_tracking", columnList = "trackingNumber"),
                 @Index(name = "idx_shipment_status", columnList = "status")
         }
@@ -25,7 +28,9 @@ public class Shipment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long orderId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
     @Column(length = 20)
     private String warehouseBlock;
@@ -55,12 +60,16 @@ public class Shipment {
         return id;
     }
 
-    public Long getOrderId() {
-        return orderId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public void setOrderId(Long orderId) {
-        this.orderId = orderId;
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
     }
 
     public String getWarehouseBlock() {

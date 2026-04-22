@@ -1,0 +1,99 @@
+<section class="manage-products-page">
+  <header class="manage-products-page__header">
+    <div>
+      <p class="manage-products-page__eyebrow">Corporate product management</p>
+      <h1>Manage products</h1>
+      <p>Create, edit, and delete products across stores and categories.</p>
+    </div>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <form class="manage-products-form" #productFormRef="ngForm" (ngSubmit)="submitProduct(productFormRef)" novalidate>
+    <label>
+      Name
+      <input [(ngModel)]="productForm.name" name="name" required />
+    </label>
+    <label>
+      Price
+      <input [(ngModel)]="productForm.price" name="price" type="number" min="0" required />
+    </label>
+    <label>
+      SKU
+      <input [(ngModel)]="productForm.sku" name="sku" />
+    </label>
+    <label>
+      Stock quantity
+      <input [(ngModel)]="productForm.stockQuantity" name="stockQuantity" type="number" min="0" />
+    </label>
+    <label>
+      Store
+      <select [(ngModel)]="productForm.storeId" name="storeId">
+        <option [ngValue]="undefined">Choose store</option>
+        <option *ngFor="let store of stores()" [ngValue]="store.id">{{ store.name }}</option>
+      </select>
+    </label>
+    <label>
+      Category
+      <select [(ngModel)]="productForm.categoryId" name="categoryId">
+        <option [ngValue]="undefined">Choose category</option>
+        <option *ngFor="let category of categories()" [ngValue]="category.id">{{ category.name }}</option>
+      </select>
+    </label>
+    <label>
+      Description
+      <textarea [(ngModel)]="productForm.description" name="description"></textarea>
+    </label>
+    <label>
+      Status
+      <select [(ngModel)]="productForm.status" name="status">
+        <option value="ACTIVE">ACTIVE</option>
+        <option value="INACTIVE">INACTIVE</option>
+      </select>
+    </label>
+    <button type="submit" [disabled]="isSubmitting()">
+      {{ editingProductId ? 'Save changes' : 'Create product' }}
+    </button>
+    <button type="button" *ngIf="editingProductId" (click)="cancelEdit()">Cancel</button>
+    <p class="form-message form-message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
+    <p class="form-message form-message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+  </form>
+
+  <section>
+    <div class="manage-products-actions">
+      <button type="button" (click)="refresh()">Refresh list</button>
+    </div>
+    @if (isLoading()) {
+      <p>Loading products...</p>
+    } @else if (products().length === 0) {
+      <p>No products available.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Store</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let product of products()">
+            <td>{{ product.id }}</td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.store?.name || '-' }}</td>
+            <td>{{ product.category?.name || '-' }}</td>
+            <td>{{ product.price | currency:'USD' }}</td>
+            <td>{{ product.status || '-' }}</td>
+            <td>
+              <button type="button" (click)="editProduct(product)">Edit</button>
+              <button type="button" (click)="deleteProduct(product.id)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    }
+  </section>
+</section>

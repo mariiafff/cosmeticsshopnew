@@ -29,7 +29,7 @@ public class ProductService {
         if (query == null || query.isBlank()) {
             return getAllProducts();
         }
-        return productRepository.findByNameContainingIgnoreCaseOrCategoryContainingIgnoreCase(query, query);
+        return productRepository.findByNameContainingIgnoreCaseOrCategory_NameContainingIgnoreCase(query, query);
     }
 
     public Product saveProduct(Product product) {
@@ -46,7 +46,7 @@ public class ProductService {
         existingProduct.setPrice(product.getPrice());
         existingProduct.setDescription(product.getDescription());
         existingProduct.setSellerId(product.getSellerId());
-        existingProduct.setStoreId(product.getStoreId());
+        existingProduct.setStore(product.getStore());
         existingProduct.setSku(product.getSku());
         existingProduct.setCategory(product.getCategory());
         existingProduct.setStockQuantity(product.getStockQuantity());

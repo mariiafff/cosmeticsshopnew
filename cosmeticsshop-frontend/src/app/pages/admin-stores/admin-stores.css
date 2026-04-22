@@ -1,0 +1,24 @@
+/* Admin stores page styling placeholder */
+.admin-stores-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-stores-page th,
+.admin-stores-page td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+.admin-form {
+  margin-bottom: 1rem;
+}
+.admin-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+.admin-form input,
+.admin-form textarea,
+.admin-form select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+}

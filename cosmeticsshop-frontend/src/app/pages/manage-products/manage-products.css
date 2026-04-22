@@ -1,0 +1,22 @@
+/* Manage products page styling placeholder */
+.manage-products-page table,
+.manage-products-page th,
+.manage-products-page td {
+  border: 1px solid #ddd;
+  border-collapse: collapse;
+}
+.manage-products-page th,
+.manage-products-page td {
+  padding: 8px;
+}
+.manage-products-form label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+.manage-products-form input,
+.manage-products-form textarea,
+.manage-products-form select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+}

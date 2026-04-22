@@ -31,7 +31,19 @@ export class OrderService {
     return this.http.get<Order[]>(`${this.apiUrl}/my`);
   }
 
+  getAllOrders(): Observable<Order[]> {
+    return this.http.get<Order[]>(this.apiUrl);
+  }
+
   createOrder(payload: CreateOrderRequest): Observable<Order> {
     return this.http.post<Order>(this.apiUrl, payload);
+  }
+
+  updateOrder(id: number, payload: Order): Observable<Order> {
+    return this.http.put<Order>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  deleteOrder(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

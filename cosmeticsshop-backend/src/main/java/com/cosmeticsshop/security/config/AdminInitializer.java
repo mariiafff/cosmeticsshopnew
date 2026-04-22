@@ -62,7 +62,7 @@ public class AdminInitializer {
             Category skincare = new Category();
             skincare.setName("Skincare");
             skincare.setDescription("Daily skincare essentials");
-            categoryRepository.save(skincare);
+            Category savedCategory = categoryRepository.save(skincare);
 
             Store store = new Store();
             store.setName("Luna Beauty");
@@ -96,7 +96,7 @@ public class AdminInitializer {
             userRepository.save(shopper);
 
             CustomerProfile profile = new CustomerProfile();
-            profile.setUserId(shopper.getId());
+            profile.setUser(shopper);
             profile.setAge(27);
             profile.setGender("Female");
             profile.setCity("Istanbul");
@@ -108,16 +108,16 @@ public class AdminInitializer {
             serum.setName("Vitamin C Glow Serum");
             serum.setDescription("Brightening serum with vitamin C.");
             serum.setPrice(34.90);
-            serum.setStoreId(savedStore.getId());
+            serum.setStore(savedStore);
             serum.setSellerId(corporate.getId());
             serum.setSku("SKU-GLOW-001");
-            serum.setCategory("Skincare");
+            serum.setCategory(savedCategory);
             serum.setStockQuantity(24);
             Product savedProduct = productRepository.save(serum);
 
             Order order = new Order();
-            order.setUserId(shopper.getId());
-            order.setStoreId(savedStore.getId());
+            order.setUser(shopper);
+            order.setStore(savedStore);
             order.setOrderNumber("ORD-SEED-001");
             order.setPaymentMethod("CARD");
             order.setStatus("DELIVERED");
@@ -138,7 +138,7 @@ public class AdminInitializer {
             orderItemRepository.save(item);
 
             Shipment shipment = new Shipment();
-            shipment.setOrderId(savedOrder.getId());
+            shipment.setOrder(savedOrder);
             shipment.setWarehouseBlock("A");
             shipment.setModeOfShipment("Air");
             shipment.setTrackingNumber("TRK-SEED-001");
@@ -148,8 +148,8 @@ public class AdminInitializer {
             shipmentRepository.save(shipment);
 
             Review review = new Review();
-            review.setProductId(savedProduct.getId());
-            review.setUserId(shopper.getId());
+            review.setProduct(savedProduct);
+            review.setUser(shopper);
             review.setRating(5);
             review.setTitle("Great daily serum");
             review.setComment("Skin feels brighter and lightweight after a week.");

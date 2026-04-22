@@ -28,4 +28,19 @@ public class StoreService {
     public Store save(Store store) {
         return storeRepository.save(store);
     }
+
+    public Store updateStore(Long id, Store store) {
+        Store existing = getStoreById(id);
+        existing.setName(store.getName());
+        existing.setCity(store.getCity());
+        existing.setCountry(store.getCountry());
+        existing.setStatus(store.getStatus());
+        existing.setDescription(store.getDescription());
+        existing.setOwnerUserId(store.getOwnerUserId());
+        return storeRepository.save(existing);
+    }
+
+    public void deleteStore(Long id) {
+        storeRepository.deleteById(id);
+    }
 }

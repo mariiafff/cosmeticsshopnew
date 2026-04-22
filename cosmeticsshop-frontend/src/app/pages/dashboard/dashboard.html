@@ -10,11 +10,16 @@
     </p>
 
     <nav class="dashboard-page__actions" aria-label="Primary navigation">
-      <a routerLink="/orders">Orders</a>
-      <a routerLink="/products">Products</a>
-      <a routerLink="/chat">AI Analytics Chat</a>
-      <a routerLink="/login">Login</a>
-      <a routerLink="/register">Register</a>
+      <a routerLink="/products" *ngIf="role() !== 'Guest'">Products</a>
+      <a routerLink="/orders" *ngIf="role() !== 'Guest'">Orders</a>
+      <a routerLink="/manage/products" *ngIf="role() === 'CORPORATE' || role() === 'ADMIN'">Manage Products</a>
+      <a routerLink="/manage/orders" *ngIf="role() === 'CORPORATE' || role() === 'ADMIN'">Manage Orders</a>
+      <a routerLink="/admin/users" *ngIf="role() === 'ADMIN'">Admin Users</a>
+      <a routerLink="/admin/stores" *ngIf="role() === 'ADMIN'">Admin Stores</a>
+      <a routerLink="/admin/categories" *ngIf="role() === 'ADMIN'">Admin Categories</a>
+      <a routerLink="/chat" *ngIf="role() !== 'Guest'">AI Analytics Chat</a>
+      <a routerLink="/login" *ngIf="role() === 'Guest'">Login</a>
+      <a routerLink="/register" *ngIf="role() === 'Guest'">Register</a>
     </nav>
   </header>
 

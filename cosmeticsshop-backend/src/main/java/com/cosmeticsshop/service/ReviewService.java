@@ -21,7 +21,7 @@ public class ReviewService {
     }
 
     public List<Review> getReviewsByProductId(Long productId) {
-        return reviewRepository.findByProductId(productId);
+        return reviewRepository.findByProduct_Id(productId);
     }
 
     public Review getReviewById(Long id) {
@@ -36,8 +36,8 @@ public class ReviewService {
     public Review updateReview(Long id, Review review) {
         Review existingReview = getReviewById(id);
 
-        existingReview.setProductId(review.getProductId());
-        existingReview.setUserId(review.getUserId());
+        existingReview.setProduct(review.getProduct());
+        existingReview.setUser(review.getUser());
         existingReview.setRating(review.getRating());
         existingReview.setComment(review.getComment());
         existingReview.setTitle(review.getTitle());

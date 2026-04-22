@@ -2,18 +2,21 @@ package com.cosmeticsshop.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(
         name = "products",
         indexes = {
-                @Index(name = "idx_product_store", columnList = "storeId"),
-                @Index(name = "idx_product_category", columnList = "category"),
+                @Index(name = "idx_product_store", columnList = "store_id"),
+                @Index(name = "idx_product_category", columnList = "category_id"),
                 @Index(name = "idx_product_sku", columnList = "sku", unique = true)
         }
 )
@@ -32,13 +35,17 @@ public class Product {
     private String description;
 
     private Long sellerId;
-    private Long storeId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id")
+    private Store store;
 
     @Column(length = 60)
     private String sku;
 
-    @Column(length = 100)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     private Integer stockQuantity = 0;
 
@@ -71,14 +78,14 @@ public class Product {
     public Long getSellerId() { return sellerId; }
     public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
 
-    public Long getStoreId() { return storeId; }
-    public void setStoreId(Long storeId) { this.storeId = storeId; }
+    public Store getStore() { return store; }
+    public void setStore(Store store) { this.store = store; }
 
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }
 
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
 
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }

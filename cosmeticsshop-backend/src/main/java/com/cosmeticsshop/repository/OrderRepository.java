@@ -13,9 +13,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("select count(o) from Order o")
     Long findTotalOrdersCount();
 
-    List<Order> findByUserId(Long userId);
+    List<Order> findByUser_Id(Long userId);
 
-    List<Order> findByStoreId(Long storeId);
+    List<Order> findByStore_Id(Long storeId);
 
     @Query("""
             select new map(function('formatdatetime', o.createdAt, 'yyyy-MM') as period, coalesce(sum(o.totalPrice), 0) as revenue)

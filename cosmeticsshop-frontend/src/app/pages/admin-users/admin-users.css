@@ -1,0 +1,14 @@
+/* Admin users page styling placeholder */
+.admin-users-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-users-page th,
+.admin-users-page td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+.admin-users-page button {
+  margin-right: 0.5rem;
+}

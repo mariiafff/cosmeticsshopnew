@@ -1,0 +1,16 @@
+/* Manage orders page styling placeholder */
+.manage-orders-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.manage-orders-page th,
+.manage-orders-page td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+.manage-orders-page__actions {
+  margin-bottom: 1rem;
+}
+.manage-orders-page select {
+  min-width: 150px;
+}

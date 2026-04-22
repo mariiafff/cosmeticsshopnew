@@ -55,11 +55,19 @@ export class AuthService {
   }
 
   logout(): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);
   }
 
   getToken(): string | null {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+
     return localStorage.getItem(this.tokenKey);
   }
 
@@ -94,6 +102,10 @@ export class AuthService {
   }
 
   private saveAuth(response: AuthResponse): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
     localStorage.setItem(this.tokenKey, response.token);
     if (response.refreshToken) {
       localStorage.setItem(this.refreshTokenKey, response.refreshToken);

@@ -1,0 +1,64 @@
+<section class="admin-categories-page">
+  <header class="admin-categories-page__header">
+    <div>
+      <p class="admin-categories-page__eyebrow">Category management</p>
+      <h1>Manage categories</h1>
+      <p>Add, edit, and remove category definitions used by products.</p>
+    </div>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <form class="admin-form" #categoryForm="ngForm" (ngSubmit)="submitCategory(categoryForm)" novalidate>
+    <label>
+      Name
+      <input [(ngModel)]="categoryRequest.name" name="name" required />
+    </label>
+    <label>
+      Parent category ID
+      <input [(ngModel)]="categoryRequest.parentCategoryId" name="parentCategoryId" type="number" />
+    </label>
+    <label>
+      Description
+      <textarea [(ngModel)]="categoryRequest.description" name="description"></textarea>
+    </label>
+    <button type="submit" [disabled]="isSubmitting()">
+      {{ editingCategoryId ? 'Update category' : 'Create category' }}
+    </button>
+    <button type="button" *ngIf="editingCategoryId" (click)="cancelEdit()">Cancel edit</button>
+    <p class="form-message form-message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
+    <p class="form-message form-message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+  </form>
+
+  <section>
+    <button type="button" (click)="loadCategories()">Refresh categories</button>
+    @if (isLoading()) {
+      <p>Loading categories...</p>
+    } @else if (categories().length === 0) {
+      <p>No categories available.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Parent ID</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let category of categories()">
+            <td>{{ category.id }}</td>
+            <td>{{ category.name }}</td>
+            <td>{{ category.parentCategoryId ?? '-' }}</td>
+            <td>{{ category.description || '-' }}</td>
+            <td>
+              <button type="button" (click)="editCategory(category)">Edit</button>
+              <button type="button" (click)="deleteCategory(category)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    }
+  </section>
+</section>

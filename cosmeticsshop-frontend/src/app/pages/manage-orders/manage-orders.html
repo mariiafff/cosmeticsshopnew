@@ -1,0 +1,56 @@
+<section class="manage-orders-page">
+  <header class="manage-orders-page__header">
+    <div>
+      <p class="manage-orders-page__eyebrow">Corporate order management</p>
+      <h1>Manage orders</h1>
+      <p>View all orders, update status, and delete orders.</p>
+    </div>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <section class="manage-orders-page__actions">
+    <button type="button" (click)="loadOrders()">Refresh orders</button>
+    <p class="form-message form-message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
+    <p class="form-message form-message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+  </section>
+
+  @if (isLoading()) {
+    <p>Loading orders...</p>
+  } @else if (orders().length === 0) {
+    <p>No orders found.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Order</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Shipment</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let order of orders()">
+          <td>{{ order.id }}</td>
+          <td>{{ order.orderNumber || ('#' + order.id) }}</td>
+          <td>{{ order.totalPrice | currency:'USD' }}</td>
+          <td>
+            <select [(ngModel)]="order.status" name="status-{{ order.id }}">
+              <option value="PENDING">PENDING</option>
+              <option value="PROCESSING">PROCESSING</option>
+              <option value="SHIPPED">SHIPPED</option>
+              <option value="DELIVERED">DELIVERED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </td>
+          <td>{{ order.shipmentStatus || '-' }}</td>
+          <td>
+            <button type="button" (click)="updateOrder(order)">Save</button>
+            <button type="button" (click)="deleteOrder(order.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  }
+</section>

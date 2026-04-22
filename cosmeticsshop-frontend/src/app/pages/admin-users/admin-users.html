@@ -1,0 +1,48 @@
+<section class="admin-users-page">
+  <header class="admin-users-page__header">
+    <div>
+      <p class="admin-users-page__eyebrow">Admin users panel</p>
+      <h1>Manage users</h1>
+      <p>View all registered users, change their status, and remove accounts.</p>
+    </div>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <section class="admin-users-page__content">
+    <button type="button" (click)="loadUsers()">Refresh users</button>
+    <p class="form-message form-message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
+    <p class="form-message form-message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+
+    @if (isLoading()) {
+      <p>Loading users...</p>
+    } @else if (users().length === 0) {
+      <p>No users found.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users()">
+            <td>{{ user.id }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role || 'Unknown' }}</td>
+            <td>{{ user.status || 'Unknown' }}</td>
+            <td>
+              <button type="button" (click)="toggleStatus(user)">
+                {{ user.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+              </button>
+              <button type="button" (click)="deleteUser(user)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    }
+  </section>
+</section>

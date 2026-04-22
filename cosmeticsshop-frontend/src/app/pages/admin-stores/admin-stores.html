@@ -1,0 +1,81 @@
+<section class="admin-stores-page">
+  <header class="admin-stores-page__header">
+    <div>
+      <p class="admin-stores-page__eyebrow">Store management</p>
+      <h1>Manage stores</h1>
+      <p>Create, update, and remove stores that support product listings.</p>
+    </div>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </header>
+
+  <form class="admin-form" #storeForm="ngForm" (ngSubmit)="submitStore(storeForm)" novalidate>
+    <div>
+      <label>
+        Store name
+        <input [(ngModel)]="storeRequest.name" name="name" required />
+      </label>
+      <label>
+        Status
+        <select [(ngModel)]="storeRequest.status" name="status">
+          <option value="OPEN">OPEN</option>
+          <option value="CLOSED">CLOSED</option>
+        </select>
+      </label>
+      <label>
+        City
+        <input [(ngModel)]="storeRequest.city" name="city" />
+      </label>
+      <label>
+        Country
+        <input [(ngModel)]="storeRequest.country" name="country" />
+      </label>
+      <label>
+        Description
+        <textarea [(ngModel)]="storeRequest.description" name="description"></textarea>
+      </label>
+      <button type="submit" [disabled]="isSubmitting()">
+        {{ editingStoreId ? 'Update store' : 'Create store' }}
+      </button>
+      <button type="button" *ngIf="editingStoreId" (click)="cancelEdit()">Cancel edit</button>
+    </div>
+    <p class="form-message form-message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
+    <p class="form-message form-message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+  </form>
+
+  <section>
+    <div class="admin-stores-page__actions">
+      <button type="button" (click)="loadStores()">Refresh stores</button>
+    </div>
+    @if (isLoading()) {
+      <p>Loading stores...</p>
+    } @else if (stores().length === 0) {
+      <p>No stores available.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>City</th>
+            <th>Country</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let store of stores()">
+            <td>{{ store.id }}</td>
+            <td>{{ store.name }}</td>
+            <td>{{ store.status || 'OPEN' }}</td>
+            <td>{{ store.city || '-' }}</td>
+            <td>{{ store.country || '-' }}</td>
+            <td>
+              <button type="button" (click)="editStore(store)">Edit</button>
+              <button type="button" (click)="deleteStore(store)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    }
+  </section>
+</section>
