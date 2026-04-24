@@ -7,15 +7,15 @@
   display: grid;
   place-items: center;
   padding: 2rem;
-  background: linear-gradient(180deg, #fff9f8 0%, #f8efee 100%);
+  background: #f7f4ef;
 }
 
 .auth-card {
   width: min(100%, 28rem);
   padding: 2rem;
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 20px 60px rgba(75, 45, 40, 0.08);
+  border: 1px solid rgba(21, 21, 21, 0.14);
+  border-radius: 0;
+  background: #fffdf9;
 }
 
 .auth-card--wide {
@@ -25,18 +25,23 @@
 .auth-card__eyebrow {
   margin: 0 0 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.22em;
   font-size: 0.75rem;
-  color: #9a5c51;
+  color: #6d665d;
 }
 
 h1 {
   margin: 0 0 0.75rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 p {
   line-height: 1.6;
-  color: #5e4641;
+  color: #4d4840;
 }
 
 .auth-card__text {
@@ -57,24 +62,24 @@ p {
 
 .auth-field span {
   font-weight: 600;
-  color: #5e4641;
+  color: #151515;
 }
 
 .auth-field input,
 .auth-field select {
   width: 100%;
   padding: 0.85rem 1rem;
-  border-radius: 0.9rem;
-  border: 1px solid #d9c7c4;
+  border-radius: 0;
+  border: 1px solid rgba(21, 21, 21, 0.22);
   font: inherit;
-  background: #fffdfc;
+  background: #fffdf9;
 }
 
 button {
   padding: 0.9rem 1.2rem;
-  border: 0;
-  border-radius: 999px;
-  background: #7f3f34;
+  border: 1px solid #151515;
+  border-radius: 0;
+  background: #151515;
   color: white;
   font: inherit;
   cursor: pointer;
@@ -85,7 +90,7 @@ button {
 }
 
 a {
-  color: #7f3f34;
+  color: #151515;
 }
 
 @media (max-width: 720px) {

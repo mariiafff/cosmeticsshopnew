@@ -3,7 +3,7 @@
     <p class="auth-card__eyebrow">Welcome back</p>
     <h1>Login</h1>
     <p class="auth-card__text">
-      Enter your email and password to sign in. If successful, you will be redirected to the products page.
+      Sign in to shop faster, track orders, manage your store, or see your beauty profile.
     </p>
 
     <label class="auth-field">
@@ -13,7 +13,7 @@
         #emailInput="ngModel"
         name="email"
         type="email"
-        placeholder="student@example.com"
+        placeholder="you@example.com"
         required
         email
       />
@@ -44,7 +44,7 @@
       }
     </label>
 
-    <button type="submit" [disabled]="isSubmitting() || loginForm.invalid">
+    <button type="submit" [disabled]="isSubmitting()">
       {{ isSubmitting() ? 'Logging in...' : 'Login' }}
     </button>
 
@@ -52,6 +52,6 @@
       <p class="auth-message auth-message--error">{{ errorMessage() }}</p>
     }
 
-    <a routerLink="/products">Continue to products</a>
+    <a routerLink="/products">Continue shopping</a>
   </form>
 </section>

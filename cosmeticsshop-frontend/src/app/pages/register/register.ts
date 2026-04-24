@@ -45,7 +45,7 @@ export class RegisterPage {
       },
       error: (error: HttpErrorResponse) => {
         if (error.status === 0) {
-          this.errorMessage.set('Backend API is not reachable on http://localhost:8080. Start the Spring Boot backend first.');
+          this.errorMessage.set('We cannot create accounts right now. Please try again soon.');
         } else if (error.status === 409) {
           this.errorMessage.set('This email is already registered.');
         } else {

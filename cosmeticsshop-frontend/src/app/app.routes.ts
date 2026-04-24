@@ -34,13 +34,15 @@ export const routes: Routes = [
   },
   {
     path: 'manage/products',
-    loadComponent: () => import('./pages/manage-products/manage-products').then((m) => m.ManageProductsPage),
+    loadComponent: () =>
+      import('./pages/manage-products/manage-products').then((m) => m.ManageProductsPage),
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['CORPORATE', 'ADMIN'] }
   },
   {
     path: 'manage/orders',
-    loadComponent: () => import('./pages/manage-orders/manage-orders').then((m) => m.ManageOrdersPage),
+    loadComponent: () =>
+      import('./pages/manage-orders/manage-orders').then((m) => m.ManageOrdersPage),
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['CORPORATE', 'ADMIN'] }
   },
@@ -58,9 +60,20 @@ export const routes: Routes = [
   },
   {
     path: 'admin/categories',
-    loadComponent: () => import('./pages/admin-categories/admin-categories').then((m) => m.AdminCategoriesPage),
+    loadComponent: () =>
+      import('./pages/admin-categories/admin-categories').then((m) => m.AdminCategoriesPage),
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['ADMIN'] }
+  },
+  {
+    path: 'orders/payment-success',
+    loadComponent: () => import('./pages/orders/orders').then((m) => m.OrdersPage)
+  },
+  {
+    path: 'checkout',
+    loadComponent: () => import('./pages/checkout/checkout').then((m) => m.CheckoutPage),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['INDIVIDUAL', 'CORPORATE', 'ADMIN'] }
   },
   {
     path: 'chat',

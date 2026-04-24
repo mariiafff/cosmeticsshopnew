@@ -107,7 +107,7 @@ public class JwtUtil {
     private byte[] resolveKeyBytes() {
         try {
             return Decoders.BASE64.decode(secret);
-        } catch (IllegalArgumentException ex) {
+        } catch (RuntimeException ex) {
             return secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         }
     }

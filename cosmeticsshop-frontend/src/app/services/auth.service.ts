@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
@@ -43,9 +43,16 @@ export class AuthService {
   private readonly apiUrl = `${environment.apiBaseUrl}/auth`;
   private readonly tokenKey = 'auth_token';
   private readonly refreshTokenKey = 'refresh_token';
+  private readonly tokenSignal = signal<string | null>(this.readToken());
+
+  readonly isAuthenticated = computed(() => !!this.tokenSignal() && !this.isTokenExpired());
+  readonly currentRole = computed(() => this.extractRole(this.tokenSignal()));
+  readonly currentEmail = computed(() => this.extractEmail(this.tokenSignal()));
 
   login(payload: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, payload).pipe(tap((response) => this.saveAuth(response)));
+    return this.http
+      .post<AuthResponse>(`${this.apiUrl}/login`, payload)
+      .pipe(tap((response) => this.saveAuth(response)));
   }
 
   register(payload: RegisterRequest): Observable<AuthResponse> {
@@ -55,24 +62,79 @@ export class AuthService {
   }
 
   logout(): void {
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (!this.hasBrowserStorage()) {
+      this.tokenSignal.set(null);
       return;
     }
-
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);
+    this.tokenSignal.set(null);
   }
 
   getToken(): string | null {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return null;
-    }
-
-    return localStorage.getItem(this.tokenKey);
+    return this.tokenSignal();
   }
 
   getRole(): string | null {
-    const token = this.getToken();
+    return this.currentRole();
+  }
+
+  isLoggedIn(): boolean {
+    return this.isAuthenticated();
+  }
+
+  getUserEmail(): string | null {
+    return this.currentEmail();
+  }
+
+  private saveAuth(response: AuthResponse): void {
+    if (!this.hasBrowserStorage()) {
+      this.tokenSignal.set(response.token);
+      return;
+    }
+    localStorage.setItem(this.tokenKey, response.token);
+    if (response.refreshToken) {
+      localStorage.setItem(this.refreshTokenKey, response.refreshToken);
+    }
+    this.tokenSignal.set(response.token);
+  }
+
+  private hasBrowserStorage(): boolean {
+    return typeof localStorage !== 'undefined';
+  }
+
+  private isTokenExpired(): boolean {
+    const token = this.tokenSignal();
+    if (!token) {
+      return true;
+    }
+
+    const payload = this.decodeJwt(token);
+    const exp = typeof payload.exp === 'number' ? payload.exp : null;
+    if (!exp) {
+      return false;
+    }
+
+    return Date.now() >= exp * 1000;
+  }
+
+  private readToken(): string | null {
+    if (!this.hasBrowserStorage()) {
+      return null;
+    }
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  private extractEmail(token: string | null): string | null {
+    if (!token) {
+      return null;
+    }
+
+    const payload = this.decodeJwt(token);
+    return typeof payload.sub === 'string' ? payload.sub : null;
+  }
+
+  private extractRole(token: string | null): string | null {
     if (!token) {
       return null;
     }
@@ -85,46 +147,6 @@ export class AuthService {
     }
 
     return roleClaim ? String(roleClaim) : null;
-  }
-
-  isLoggedIn(): boolean {
-    return !!this.getToken() && !this.isTokenExpired();
-  }
-
-  getUserEmail(): string | null {
-    const token = this.getToken();
-    if (!token) {
-      return null;
-    }
-
-    const payload = this.decodeJwt(token);
-    return typeof payload.sub === 'string' ? payload.sub : null;
-  }
-
-  private saveAuth(response: AuthResponse): void {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
-
-    localStorage.setItem(this.tokenKey, response.token);
-    if (response.refreshToken) {
-      localStorage.setItem(this.refreshTokenKey, response.refreshToken);
-    }
-  }
-
-  private isTokenExpired(): boolean {
-    const token = this.getToken();
-    if (!token) {
-      return true;
-    }
-
-    const payload = this.decodeJwt(token);
-    const exp = typeof payload.exp === 'number' ? payload.exp : null;
-    if (!exp) {
-      return false;
-    }
-
-    return Date.now() >= exp * 1000;
   }
 
   private decodeJwt(token: string): JwtPayload {

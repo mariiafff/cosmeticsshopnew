@@ -7,7 +7,7 @@
   display: grid;
   place-items: center;
   padding: 2rem;
-  background: linear-gradient(180deg, #fffaf5 0%, #f5ece6 100%);
+  background: #f7f4ef;
 }
 
 .auth-card {
@@ -15,27 +15,32 @@
   display: grid;
   gap: 1rem;
   padding: 2rem;
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 20px 60px rgba(75, 45, 40, 0.08);
+  border: 1px solid rgba(21, 21, 21, 0.14);
+  border-radius: 0;
+  background: #fffdf9;
 }
 
 .auth-card__eyebrow {
   margin: 0 0 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.22em;
   font-size: 0.75rem;
-  color: #9a5c51;
+  color: #6d665d;
 }
 
 h1 {
   margin: 0 0 0.75rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 p {
   margin: 0;
   line-height: 1.6;
-  color: #5e4641;
+  color: #4d4840;
 }
 
 .auth-card__text {
@@ -49,15 +54,15 @@ p {
 
 .auth-field span {
   font-weight: 600;
-  color: #4b302d;
+  color: #151515;
 }
 
 .auth-field input {
   width: 100%;
   padding: 0.9rem 1rem;
-  border: 1px solid #dccdc9;
-  border-radius: 0.9rem;
-  background: #fffdfc;
+  border: 1px solid rgba(21, 21, 21, 0.22);
+  border-radius: 0;
+  background: #fffdf9;
   color: inherit;
   font: inherit;
 }
@@ -65,9 +70,9 @@ p {
 button {
   width: fit-content;
   padding: 0.85rem 1.25rem;
-  border: 0;
-  border-radius: 999px;
-  background: #7f3f34;
+  border: 1px solid #151515;
+  border-radius: 0;
+  background: #151515;
   color: #fff;
   font: inherit;
   cursor: pointer;
@@ -93,5 +98,5 @@ button:disabled {
 }
 
 a {
-  color: #7f3f34;
+  color: #151515;
 }

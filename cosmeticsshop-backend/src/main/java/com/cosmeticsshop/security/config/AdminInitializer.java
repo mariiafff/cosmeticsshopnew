@@ -45,7 +45,11 @@ public class AdminInitializer {
             @Value("${app.admin.password}") String adminPassword
     ) {
         return args -> {
-            if (userRepository.findByEmail(adminEmail).isEmpty()) {
+            userRepository.findByEmail(adminEmail).ifPresentOrElse(admin -> {
+                admin.setPassword(passwordEncoder.encode(adminPassword));
+                admin.setRole("ADMIN");
+                userRepository.save(admin);
+            }, () -> {
                 User admin = new User();
                 admin.setEmail(adminEmail);
                 admin.setPassword(passwordEncoder.encode(adminPassword));
@@ -53,9 +57,45 @@ public class AdminInitializer {
                 admin.setFirstName("Platform");
                 admin.setLastName("Admin");
                 userRepository.save(admin);
-            }
+            });
 
             if (storeRepository.count() > 0 || productRepository.count() > 0) {
+                Long storeId = storeRepository.findAll().stream()
+                        .findFirst()
+                        .map(Store::getId)
+                        .orElse(null);
+
+                userRepository.findByEmail("manager@luna-beauty.com").ifPresentOrElse(corporate -> {
+                    corporate.setPassword(passwordEncoder.encode("Manager123!"));
+                    corporate.setRole("CORPORATE");
+                    corporate.setStoreId(storeId);
+                    userRepository.save(corporate);
+                }, () -> {
+                    User corporate = new User();
+                    corporate.setEmail("manager@luna-beauty.com");
+                    corporate.setPassword(passwordEncoder.encode("Manager123!"));
+                    corporate.setRole("CORPORATE");
+                    corporate.setFirstName("Luna");
+                    corporate.setLastName("Manager");
+                    corporate.setStoreId(storeId);
+                    corporate.setCity("Istanbul");
+                    userRepository.save(corporate);
+                });
+                userRepository.findByEmail("shopper@example.com").ifPresentOrElse(shopper -> {
+                    shopper.setPassword(passwordEncoder.encode("Shopper123!"));
+                    shopper.setRole("INDIVIDUAL");
+                    userRepository.save(shopper);
+                }, () -> {
+                    User shopper = new User();
+                    shopper.setEmail("shopper@example.com");
+                    shopper.setPassword(passwordEncoder.encode("Shopper123!"));
+                    shopper.setRole("INDIVIDUAL");
+                    shopper.setFirstName("Ayse");
+                    shopper.setLastName("Shopper");
+                    shopper.setCity("Istanbul");
+                    shopper.setMembershipType("GOLD");
+                    userRepository.save(shopper);
+                });
                 return;
             }
 

@@ -12,6 +12,15 @@ export interface Order {
   shipmentStatus?: string;
   paymentMethod?: string;
   createdAt?: string;
+  items?: OrderItem[];
+}
+
+export interface OrderItem {
+  productId: number;
+  productName: string;
+  category?: string;
+  quantity: number;
+  price: number;
 }
 
 export interface CreateOrderRequest {

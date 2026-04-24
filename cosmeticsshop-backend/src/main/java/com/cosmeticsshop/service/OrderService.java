@@ -1,6 +1,8 @@
 package com.cosmeticsshop.service;
 
 import com.cosmeticsshop.dto.CreateOrderRequest;
+import com.cosmeticsshop.dto.OrderItemResponse;
+import com.cosmeticsshop.dto.OrderResponse;
 import com.cosmeticsshop.exception.ResourceNotFoundException;
 import com.cosmeticsshop.model.Order;
 import com.cosmeticsshop.model.OrderItem;
@@ -14,7 +16,10 @@ import com.cosmeticsshop.repository.ShipmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -93,6 +98,10 @@ public class OrderService {
         return savedOrder;
     }
 
+    public OrderResponse createOrderResponse(User user, CreateOrderRequest request) {
+        return toOrderResponse(createOrder(user, request));
+    }
+
     public Order updateOrder(Long id, Order order) {
         Order existingOrder = getOrderById(id);
 
@@ -116,7 +125,41 @@ public class OrderService {
         return orderRepository.findByUser_Id(userId);
     }
 
+    public List<OrderResponse> getOrderResponsesByUserId(Long userId) {
+        return toOrderResponses(orderRepository.findByUser_Id(userId));
+    }
+
     public List<Order> getOrdersByStoreId(Long storeId) {
         return orderRepository.findByStore_Id(storeId);
+    }
+
+    private OrderResponse toOrderResponse(Order order) {
+        return toOrderResponses(List.of(order)).get(0);
+    }
+
+    private List<OrderResponse> toOrderResponses(List<Order> orders) {
+        if (orders.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        Map<Long, List<OrderItemResponse>> itemsByOrderId = orderItemRepository.findWithProductByOrderIdIn(orderIds).stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getOrder().getId(),
+                        Collectors.mapping(
+                                item -> new OrderItemResponse(
+                                        item.getProduct().getId(),
+                                        item.getProduct().getName(),
+                                        item.getProduct().getCategory() != null ? item.getProduct().getCategory().getName() : null,
+                                        item.getQuantity(),
+                                        item.getPrice()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
+
+        return orders.stream()
+                .map(order -> new OrderResponse(order, itemsByOrderId.getOrDefault(order.getId(), Collections.emptyList())))
+                .toList();
     }
 }

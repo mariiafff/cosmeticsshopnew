@@ -1,8 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-
-import { AnalyticsService, DashboardOverview } from '../../services/analytics.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -11,39 +9,27 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
-export class DashboardPage implements OnInit {
-  private readonly analyticsService = inject(AnalyticsService);
+export class DashboardPage {
   private readonly authService = inject(AuthService);
+  protected readonly role = this.authService.currentRole;
 
-  protected readonly overview = signal<DashboardOverview | null>(null);
-  protected readonly isLoading = signal(false);
-  protected readonly errorMessage = signal('');
-  protected readonly role = computed(() => this.authService.getRole() ?? 'Guest');
-
-  ngOnInit(): void {
-    if (this.authService.isLoggedIn()) {
-      this.loadOverview();
+  protected readonly collections = [
+    {
+      eyebrow: 'Skincare',
+      title: 'Radiance Ritual',
+      text: 'Serums, creams, and daily essentials for skin that looks rested and luminous.'
+    },
+    {
+      eyebrow: 'Makeup',
+      title: 'Soft Couture',
+      text: 'Velvet lips, clean complexion, satin blush, and softly defined eyes.'
+    },
+    {
+      eyebrow: 'Fragrance',
+      title: 'Private Scent',
+      text: 'Elegant notes for morning, evening, and everything between.'
     }
-  }
+  ];
 
-  protected loadOverview(): void {
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    this.analyticsService.getOverview().subscribe({
-      next: (overview) => {
-        this.overview.set(overview);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.errorMessage.set('Analytics dashboard could not be loaded. Log in and make sure the backend is running.');
-        this.isLoading.set(false);
-      }
-    });
-  }
-
-  protected toWidth(value: unknown): number {
-    const numeric = typeof value === 'number' ? value : Number(value ?? 0);
-    return Math.max(12, Math.min(100, numeric * 10));
-  }
+  protected readonly moods = ['Clean skincare', 'Soft glam makeup', 'Signature scents', 'Hair essentials'];
 }

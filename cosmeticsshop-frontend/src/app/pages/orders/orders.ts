@@ -1,33 +1,53 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule, NgForm } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 
-import { CreateOrderRequest, Order, OrderService } from '../../services/order.service';
+import { Order, OrderService } from '../../services/order.service';
+import { AuthService } from '../../services/auth.service';
+import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-orders-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, RouterLink],
   templateUrl: './orders.html',
   styleUrl: './orders.css'
 })
 export class OrdersPage implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly route = inject(ActivatedRoute);
   private readonly orderService = inject(OrderService);
+  private readonly authService = inject(AuthService);
+  private readonly cartService = inject(CartService);
 
   protected readonly orders = signal<Order[]>([]);
   protected readonly isLoading = signal(false);
-  protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal('');
-  protected readonly successMessage = signal('');
-
-  protected readonly orderRequest: CreateOrderRequest = {
-    productId: 0,
-    quantity: 1,
-    paymentMethod: 'CARD'
-  };
+  protected readonly role = computed(() => this.authService.getRole() ?? 'Guest');
+  protected readonly roleSummary = computed(() => {
+    const role = this.role().toUpperCase();
+    if (role.includes('ADMIN')) {
+      return 'Review store orders, delivery status, payment methods, and marketplace activity.';
+    }
+    if (role.includes('CORPORATE')) {
+      return 'Follow store orders from checkout to delivery and handle customer requests quickly.';
+    }
+    return 'Check your purchases, track deliveries, and review your order history.';
+  });
+  protected readonly fulfillmentStages = ['Placed', 'Paid', 'Packed', 'Shipped', 'Delivered'];
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (this.route.snapshot.queryParamMap.get('payment') === 'success') {
+      this.createOrdersFromPaidCart();
+      return;
+    }
+
     this.loadOrders();
   }
 
@@ -37,7 +57,7 @@ export class OrdersPage implements OnInit {
 
     this.orderService.getMyOrders().subscribe({
       next: (orders) => {
-        this.orders.set(orders);
+        this.orders.set(this.sortNewestFirst(orders));
         this.isLoading.set(false);
       },
       error: () => {
@@ -47,30 +67,41 @@ export class OrdersPage implements OnInit {
     });
   }
 
-  protected createOrder(form: NgForm): void {
-    this.errorMessage.set('');
-    this.successMessage.set('');
+  private sortNewestFirst(orders: Order[]): Order[] {
+    return [...orders].sort((first, second) => {
+      const firstTime = first.createdAt ? new Date(first.createdAt).getTime() : 0;
+      const secondTime = second.createdAt ? new Date(second.createdAt).getTime() : 0;
+      return secondTime - firstTime;
+    });
+  }
 
-    if (form.invalid || this.orderRequest.productId <= 0 || this.orderRequest.quantity <= 0) {
-      this.errorMessage.set('Product ID and quantity are required. Quantity must be at least 1.');
-      form.control.markAllAsTouched();
+  private createOrdersFromPaidCart(): void {
+    const cartItems = this.cartService.items();
+
+    if (cartItems.length === 0) {
+      this.loadOrders();
       return;
     }
 
-    this.isSubmitting.set(true);
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
-    this.orderService.createOrder(this.orderRequest).subscribe({
-      next: (order) => {
-        this.orders.update((orders) => [order, ...orders]);
-        this.successMessage.set('Order created successfully.');
-        this.orderRequest.productId = 0;
-        this.orderRequest.quantity = 1;
-        this.orderRequest.paymentMethod = 'CARD';
-        this.isSubmitting.set(false);
+    forkJoin(
+      cartItems.map((item) =>
+        this.orderService.createOrder({
+          productId: item.productId,
+          quantity: item.quantity,
+          paymentMethod: 'CARD'
+        })
+      )
+    ).subscribe({
+      next: () => {
+        this.cartService.clear();
+        this.loadOrders();
       },
       error: () => {
-        this.errorMessage.set('Order creation failed. Check your token and backend endpoint.');
-        this.isSubmitting.set(false);
+        this.errorMessage.set('Payment finished, but we could not save the order yet. Please refresh or try again.');
+        this.isLoading.set(false);
       }
     });
   }

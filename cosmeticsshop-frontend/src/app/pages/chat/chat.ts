@@ -1,9 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { ChatResponse, ChatService, SendMessageRequest } from '../../services/chat.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-chat-page',
@@ -13,6 +14,7 @@ import { ChatResponse, ChatService, SendMessageRequest } from '../../services/ch
 })
 export class ChatPage {
   private readonly chatService = inject(ChatService);
+  private readonly authService = inject(AuthService);
 
   protected readonly tips = signal<string[]>([]);
   protected readonly responses = signal<ChatResponse[]>([]);
@@ -20,6 +22,24 @@ export class ChatPage {
   protected readonly isLoading = signal(false);
   protected readonly isSending = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly role = computed(() => this.authService.getRole() ?? 'Guest');
+  protected readonly accessScope = computed(() => {
+    const role = this.role().toUpperCase();
+    if (role.includes('ADMIN')) {
+      return 'You can ask about marketplace sales, stores, customers, reviews, orders, and products.';
+    }
+    if (role.includes('CORPORATE')) {
+      return 'You can ask about your store sales, products, stock, reviews, customers, and orders.';
+    }
+    return 'You can ask about your orders, deliveries, reviews, purchase history, and favorite categories.';
+  });
+  protected readonly examples = [
+    'Which products are best sellers this month?',
+    'Which items need attention?',
+    'How much did I spend on my recent orders?',
+    'Which category is performing best?'
+  ];
+  protected readonly pipeline = ['Question', 'Check access', 'Find data', 'Review answer', 'Show results'];
 
   constructor() {
     this.loadMessages();
@@ -35,7 +55,7 @@ export class ChatPage {
         this.isLoading.set(false);
       },
       error: () => {
-        this.errorMessage.set('Unable to load chat messages.');
+        this.errorMessage.set('The assistant is not available right now.');
         this.isLoading.set(false);
       }
     });
@@ -59,9 +79,17 @@ export class ChatPage {
         this.isSending.set(false);
       },
       error: () => {
-        this.errorMessage.set('Unable to send message.');
+        this.errorMessage.set('The assistant could not answer that yet.');
         this.isSending.set(false);
       }
     });
+  }
+
+  protected useExample(example: string): void {
+    this.newMessage = example;
+  }
+
+  protected rowKeys(row: Record<string, unknown>): string[] {
+    return Object.keys(row);
   }
 }

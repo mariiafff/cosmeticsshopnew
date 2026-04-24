@@ -10,6 +10,15 @@ import java.util.List;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     @Query("""
+            select oi
+            from OrderItem oi
+            join fetch oi.order
+            join fetch oi.product
+            where oi.order.id in :orderIds
+            """)
+    List<OrderItem> findWithProductByOrderIdIn(List<Long> orderIds);
+
+    @Query("""
             select new com.cosmeticsshop.dto.TopProductResponse(
                 p.id,
                 p.name,

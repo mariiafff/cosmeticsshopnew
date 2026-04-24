@@ -1,1 +1,30 @@
-<router-outlet />
+<div class="app-shell">
+  <header class="app-header">
+    <nav class="app-nav app-nav--left" aria-label="Main navigation">
+      <a routerLink="/dashboard" routerLinkActive="is-active">Home</a>
+      <a routerLink="/products" routerLinkActive="is-active">Products</a>
+      <a routerLink="/chat" routerLinkActive="is-active">Assistant</a>
+    </nav>
+
+    <a class="app-brand" routerLink="/dashboard" aria-label="Luime home">Luime</a>
+
+    <div class="app-account">
+      @if (isLoggedIn()) {
+        <a class="app-cart" routerLink="/checkout" aria-label="Cart">
+          Cart
+          <span>{{ cartCount() }}</span>
+        </a>
+        <a routerLink="/orders" routerLinkActive="is-active">Orders</a>
+        <span>Hello, {{ displayName() }}!</span>
+        <button type="button" (click)="logout()">Logout</button>
+      } @else {
+        <a routerLink="/login">Login</a>
+        <a routerLink="/register">Register</a>
+      }
+    </div>
+  </header>
+
+  <main class="app-main">
+    <router-outlet />
+  </main>
+</div>

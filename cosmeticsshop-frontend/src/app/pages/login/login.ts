@@ -44,11 +44,11 @@ export class LoginPage {
       },
       error: (error: HttpErrorResponse) => {
         if (error.status === 0) {
-          this.errorMessage.set('Backend API is not reachable on http://localhost:8080. Start the Spring Boot backend first.');
+          this.errorMessage.set('Cannot reach the backend at http://localhost:8080. Make sure Spring Boot is running.');
         } else if (error.status === 401 || error.status === 403) {
           this.errorMessage.set('Email or password is incorrect.');
         } else {
-          this.errorMessage.set('Login failed. Please try again.');
+          this.errorMessage.set(`Login failed (${error.status}). Please try again.`);
         }
         this.isSubmitting.set(false);
       }

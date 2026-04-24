@@ -1,8 +1,8 @@
 <section class="auth-page">
   <form class="auth-card auth-card--wide" #registerForm="ngForm" (ngSubmit)="register(registerForm)" novalidate>
     <p class="auth-card__eyebrow">New account</p>
-    <h1>Register</h1>
-    <p class="auth-card__text">Create an individual or corporate account with the JWT-secured Spring Boot API.</p>
+    <h1>Create Account</h1>
+    <p class="auth-card__text">Join Luime as a shopper or seller.</p>
 
     <div class="auth-grid">
       <label class="auth-field">
@@ -28,10 +28,10 @@
       </label>
 
       <label class="auth-field">
-        <span>Role</span>
+        <span>Account type</span>
         <select [(ngModel)]="registration.role" name="role">
-          <option value="INDIVIDUAL">Individual</option>
-          <option value="CORPORATE">Corporate</option>
+          <option value="INDIVIDUAL">Shopper</option>
+          <option value="CORPORATE">Seller</option>
         </select>
       </label>
     </div>
@@ -60,6 +60,6 @@
       <p class="auth-message auth-message--error">{{ errorMessage() }}</p>
     }
 
-    <a routerLink="/login">Already registered? Login</a>
+    <a routerLink="/login">Already have an account? Login</a>
   </form>
 </section>

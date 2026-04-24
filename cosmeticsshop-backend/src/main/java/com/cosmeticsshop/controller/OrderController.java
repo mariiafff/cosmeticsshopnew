@@ -1,6 +1,7 @@
 package com.cosmeticsshop.controller;
 
 import com.cosmeticsshop.dto.CreateOrderRequest;
+import com.cosmeticsshop.dto.OrderResponse;
 import com.cosmeticsshop.model.Order;
 import com.cosmeticsshop.model.User;
 import com.cosmeticsshop.repository.UserRepository;
@@ -38,11 +39,11 @@ public class OrderController {
     }
 
     @PostMapping
-    public Order createOrder(@RequestBody CreateOrderRequest request) {
+    public OrderResponse createOrder(@RequestBody CreateOrderRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email).orElseThrow();
-        return orderService.createOrder(user, request);
+        return orderService.createOrderResponse(user, request);
     }
 
     @GetMapping("/{id}")
@@ -63,10 +64,10 @@ public class OrderController {
     }
 
     @GetMapping("/my")
-    public List<Order> getMyOrders() {
+    public List<OrderResponse> getMyOrders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email).orElseThrow();
-        return orderService.getOrdersByUserId(user.getId());
+        return orderService.getOrderResponsesByUserId(user.getId());
     }
 }
