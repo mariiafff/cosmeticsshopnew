@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { Product, ProductsService } from '../../services/products.service';
+import { Product, ProductsPage as ProductsPageResponse, ProductsService } from '../../services/products.service';
 import { AuthService } from '../../services/auth.service';
 import { CartService } from '../../services/cart.service';
 
@@ -14,14 +14,20 @@ import { CartService } from '../../services/cart.service';
   styleUrl: './products.css'
 })
 export class ProductsPage implements OnInit {
+  private static readonly PAGE_SIZE = 24;
+
   private readonly productsService = inject(ProductsService);
   private readonly authService = inject(AuthService);
   private readonly cartService = inject(CartService);
 
   protected readonly products = signal<Product[]>([]);
   protected readonly isLoading = signal(false);
+  protected readonly isLoadingMore = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
+  protected readonly currentPage = signal(0);
+  protected readonly totalPages = signal(0);
+  protected readonly totalElements = signal(0);
   protected searchQuery = '';
   protected categoryFilter = 'ALL';
   protected stockFilter = 'ALL';
@@ -59,29 +65,87 @@ export class ProductsPage implements OnInit {
     const role = this.role().toUpperCase();
     return role.includes('ADMIN') || role.includes('CORPORATE');
   });
+  protected readonly canLoadMore = computed(() => {
+    return !this.isLoading() && !this.isLoadingMore() && this.currentPage() + 1 < this.totalPages();
+  });
+  protected readonly loadedCount = computed(() => this.products().length);
 
   ngOnInit(): void {
     this.loadProducts();
   }
 
-  protected loadProducts(): void {
-    this.isLoading.set(true);
+  protected loadProducts(loadMore = false): void {
+    const nextPage = loadMore ? this.currentPage() + 1 : 0;
+
+    if (loadMore) {
+      this.isLoadingMore.set(true);
+    } else {
+      this.isLoading.set(true);
+    }
     this.errorMessage.set('');
 
-    this.productsService.getProducts(this.searchQuery).subscribe({
-      next: (products) => {
-        this.products.set(products);
+    this.productsService.getProductsPage({
+      page: nextPage,
+      size: ProductsPage.PAGE_SIZE,
+      search: this.searchQuery,
+      sort: this.resolveSort()
+    }).subscribe({
+      next: (response) => {
+        this.applyPage(response, loadMore);
         this.isLoading.set(false);
+        this.isLoadingMore.set(false);
       },
       error: () => {
         this.errorMessage.set('We could not load products right now.');
         this.isLoading.set(false);
+        this.isLoadingMore.set(false);
       }
     });
+  }
+
+  protected applySort(): void {
+    this.loadProducts();
+  }
+
+  protected loadMore(): void {
+    if (!this.canLoadMore()) {
+      return;
+    }
+    this.loadProducts(true);
+  }
+
+  protected productStockLabel(product: Product): string {
+    const stock = product.stockQuantity ?? 0;
+    return stock > 0 ? `Stock: ${stock}` : 'Stock: N/A';
+  }
+
+  protected trackByProductId(_index: number, product: Product): number {
+    return product.id;
   }
 
   protected addToCart(product: Product): void {
     this.cartService.addProduct(product);
     this.successMessage.set(`${product.name} added to cart.`);
+  }
+
+  private applyPage(response: ProductsPageResponse, append: boolean): void {
+    const mergedProducts = append
+      ? [...this.products(), ...response.content]
+      : response.content;
+
+    this.products.set(mergedProducts);
+    this.currentPage.set(response.number);
+    this.totalPages.set(response.totalPages);
+    this.totalElements.set(response.totalElements);
+  }
+
+  private resolveSort(): string {
+    if (this.sortMode === 'price') {
+      return 'price,asc';
+    }
+    if (this.sortMode === 'stock') {
+      return 'stock,desc';
+    }
+    return 'name,asc';
   }
 }

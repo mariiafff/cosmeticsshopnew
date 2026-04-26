@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { ChatResponse, ChatService, SendMessageRequest } from '../../services/chat.service';
+import { ChatResponse, ChatService } from '../../services/chat.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -16,11 +16,9 @@ export class ChatPage {
   private readonly chatService = inject(ChatService);
   private readonly authService = inject(AuthService);
 
-  protected readonly tips = signal<string[]>([]);
-  protected readonly responses = signal<ChatResponse[]>([]);
+  protected readonly response = signal<ChatResponse | null>(null);
   protected newMessage = '';
-  protected readonly isLoading = signal(false);
-  protected readonly isSending = signal(false);
+  protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly role = computed(() => this.authService.getRole() ?? 'Guest');
   protected readonly accessScope = computed(() => {
@@ -34,32 +32,12 @@ export class ChatPage {
     return 'You can ask about your orders, deliveries, reviews, purchase history, and favorite categories.';
   });
   protected readonly examples = [
-    'Which products are best sellers this month?',
-    'Which items need attention?',
-    'How much did I spend on my recent orders?',
-    'Which category is performing best?'
+    'Which membership type spends the most?',
+    'Which city has the most customers?',
+    'Top selling products',
+    'Which country generates the most revenue?'
   ];
-  protected readonly pipeline = ['Question', 'Check access', 'Find data', 'Review answer', 'Show results'];
-
-  constructor() {
-    this.loadMessages();
-  }
-
-  protected loadMessages(): void {
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    this.chatService.getMessages().subscribe({
-      next: (messages) => {
-        this.tips.set(messages);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.errorMessage.set('The assistant is not available right now.');
-        this.isLoading.set(false);
-      }
-    });
-  }
+  protected readonly pipeline = ['Ask question', 'Generate SQL', 'Validate SQL', 'Run query', 'Show results'];
 
   protected sendMessage(): void {
     const text = this.newMessage.trim();
@@ -68,28 +46,31 @@ export class ChatPage {
       return;
     }
 
-    this.isSending.set(true);
+    this.loading.set(true);
     this.errorMessage.set('');
+    this.response.set(null);
 
-    const payload: SendMessageRequest = { question: text };
-    this.chatService.ask(payload).subscribe({
-      next: (message) => {
-        this.responses.update((messages) => [...messages, message]);
-        this.newMessage = '';
-        this.isSending.set(false);
+    this.chatService.askQuestion(text).subscribe({
+      next: (response) => {
+        this.response.set(response);
+        this.loading.set(false);
       },
-      error: () => {
-        this.errorMessage.set('The assistant could not answer that yet.');
-        this.isSending.set(false);
+      error: (error) => {
+        this.errorMessage.set(
+          error?.error?.message ?? 'The assistant could not answer that right now.'
+        );
+        this.loading.set(false);
       }
     });
   }
 
-  protected useExample(example: string): void {
+  protected runExample(example: string): void {
     this.newMessage = example;
+    this.sendMessage();
   }
 
-  protected rowKeys(row: Record<string, unknown>): string[] {
-    return Object.keys(row);
+  protected responseColumns(): string[] {
+    const firstRow = this.response()?.rows?.[0];
+    return firstRow ? Object.keys(firstRow) : [];
   }
 }

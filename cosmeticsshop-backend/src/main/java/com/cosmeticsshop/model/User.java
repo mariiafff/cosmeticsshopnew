@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import java.time.LocalDateTime;
 
@@ -18,8 +19,7 @@ import java.time.LocalDateTime;
         name = "users",
         indexes = {
                 @Index(name = "idx_user_email", columnList = "email", unique = true),
-                @Index(name = "idx_user_role", columnList = "role"),
-                @Index(name = "idx_user_store", columnList = "storeId")
+                @Index(name = "idx_user_role_type", columnList = "role_type")
         }
 )
 public class User {
@@ -28,24 +28,25 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 60)
+    @Transient
     private String firstName;
 
-    @Column(length = 60)
+    @Transient
     private String lastName;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String password;
 
-    @Column(nullable = false, length = 30)
+    @Column(name = "role_type", nullable = false, length = 30)
     private String role = "INDIVIDUAL";
 
-    @Column(nullable = false, length = 30)
+    @Transient
     private String status = "ACTIVE";
 
+    @Transient
     private Long storeId;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
@@ -54,9 +55,10 @@ public class User {
     @Column(length = 100)
     private String city;
 
-    @Column(length = 50)
+    @Transient
     private String membershipType;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public User() {}

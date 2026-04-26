@@ -23,7 +23,7 @@ export class RegisterPage {
     lastName: '',
     email: '',
     password: '',
-    role: 'INDIVIDUAL',
+    accountType: 'SHOPPER',
     city: '',
     membershipType: 'GOLD'
   };
@@ -44,10 +44,11 @@ export class RegisterPage {
         void this.router.navigate(['/dashboard']);
       },
       error: (error: HttpErrorResponse) => {
+        console.error('Registration failed:', error.error ?? error.message);
         if (error.status === 0) {
           this.errorMessage.set('We cannot create accounts right now. Please try again soon.');
-        } else if (error.status === 409) {
-          this.errorMessage.set('This email is already registered.');
+        } else if (typeof error.error?.message === 'string' && error.error.message.trim()) {
+          this.errorMessage.set(error.error.message);
         } else {
           this.errorMessage.set('Registration failed. Please check the form and try again.');
         }

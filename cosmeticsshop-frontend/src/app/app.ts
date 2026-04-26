@@ -17,16 +17,15 @@ export class App {
   private readonly router = inject(Router);
 
   protected readonly title = signal('cosmeticsshop-frontend');
-  protected readonly isLoggedIn = this.authService.isAuthenticated;
-  protected readonly role = computed(() => this.authService.currentRole() ?? 'Guest');
-  protected readonly email = computed(() => this.authService.currentEmail() ?? 'Not signed in');
+  protected readonly isLoggedIn = computed(() => this.authService.isLoggedIn());
+  protected readonly role = computed(() => this.authService.getUser()?.role ?? 'Guest');
+  protected readonly email = computed(() => this.authService.getUser()?.email ?? 'Not signed in');
   protected readonly displayName = computed(() => {
-    const email = this.authService.currentEmail();
-    if (!email) {
+    const user = this.authService.getUser();
+    if (!user) {
       return '';
     }
-    const name = email.split('@')[0].split(/[._-]/)[0];
-    return name ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : 'there';
+    return user.name || user.email;
   });
   protected readonly cartCount = this.cartService.itemCount;
 

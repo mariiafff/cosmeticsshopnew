@@ -48,7 +48,7 @@
 
         <label>
           <span>Sort</span>
-          <select [(ngModel)]="sortMode">
+          <select [(ngModel)]="sortMode" (ngModelChange)="applySort()">
             <option value="name">Name</option>
             <option value="price">Price</option>
             <option value="stock">Stock</option>
@@ -56,8 +56,8 @@
         </label>
 
         <div class="products-filters__summary">
-          <strong>{{ filteredProducts().length }}</strong>
-          <span>visible products</span>
+          <strong>{{ loadedCount() }}/{{ totalElements() }}</strong>
+          <span>loaded products</span>
         </div>
       </div>
 
@@ -84,22 +84,30 @@
         <p class="products-page__state">No products match your search yet.</p>
       } @else {
         <ul class="products-page__grid">
-          <li *ngFor="let product of filteredProducts()" class="product-card">
+          <li *ngFor="let product of filteredProducts(); trackBy: trackByProductId" class="product-card">
             <p class="product-card__id">#{{ product.id }} · {{ product.sku || 'No SKU' }}</p>
             <h3>{{ product.name }}</h3>
             <p class="product-card__meta">
               <span>{{ product.category?.name || 'Uncategorized' }}</span>
-              <span>{{ product.price || 0 | currency: 'USD' }}</span>
+              <span>{{ (product.unitPrice ?? product.price ?? 0) | currency: 'USD' }}</span>
             </p>
             <p>{{ product.description }}</p>
             <div class="product-card__footer">
-              <span [class.product-card__stock--low]="(product.stockQuantity ?? 0) <= 5">
-                Stock: {{ product.stockQuantity ?? 0 }}
+              <span [class.product-card__stock--low]="(product.stockQuantity ?? 0) > 0 && (product.stockQuantity ?? 0) <= 5">
+                {{ productStockLabel(product) }}
               </span>
               <button type="button" (click)="addToCart(product)">Buy</button>
             </div>
           </li>
         </ul>
+
+        @if (canLoadMore()) {
+          <div class="products-page__load-more">
+            <button type="button" class="products-page__refresh" (click)="loadMore()" [disabled]="isLoadingMore()">
+              {{ isLoadingMore() ? 'Loading...' : 'Load more' }}
+            </button>
+          </div>
+        }
       }
     </div>
   </section>

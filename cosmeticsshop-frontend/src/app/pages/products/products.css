@@ -248,6 +248,12 @@ h1 {
   color: #24543e;
 }
 
+.products-page__load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
 @media (max-width: 900px) {
   .products-page {
     padding: 2.5rem 1rem;

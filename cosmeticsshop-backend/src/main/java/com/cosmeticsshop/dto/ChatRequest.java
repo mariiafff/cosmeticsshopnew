@@ -1,6 +1,6 @@
 package com.cosmeticsshop.dto;
 
-public class ChatAskRequest {
+public class ChatRequest {
 
     private String question;
 

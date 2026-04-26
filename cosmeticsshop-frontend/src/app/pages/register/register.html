@@ -29,9 +29,9 @@
 
       <label class="auth-field">
         <span>Account type</span>
-        <select [(ngModel)]="registration.role" name="role">
-          <option value="INDIVIDUAL">Shopper</option>
-          <option value="CORPORATE">Seller</option>
+        <select [(ngModel)]="registration.accountType" name="accountType">
+          <option value="SHOPPER">Shopper</option>
+          <option value="SELLER">Seller</option>
         </select>
       </label>
     </div>
@@ -45,9 +45,9 @@
       <label class="auth-field">
         <span>Membership</span>
         <select [(ngModel)]="registration.membershipType" name="membershipType">
+          <option value="BRONZE">Bronze</option>
           <option value="SILVER">Silver</option>
           <option value="GOLD">Gold</option>
-          <option value="PLATINUM">Platinum</option>
         </select>
       </label>
     </div>

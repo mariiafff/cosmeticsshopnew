@@ -14,7 +14,7 @@ export interface RegisterRequest {
   lastName: string;
   email: string;
   password: string;
-  role: string;
+  accountType: string;
   city?: string;
   membershipType?: string;
 }
@@ -29,10 +29,17 @@ export interface AuthResponse {
 export interface JwtPayload {
   sub?: string;
   email?: string;
+  name?: string;
   role?: string;
   roles?: string[];
   exp?: number;
   [key: string]: unknown;
+}
+
+export interface AuthUser {
+  email: string;
+  name: string | null;
+  role: string | null;
 }
 
 @Injectable({
@@ -45,9 +52,9 @@ export class AuthService {
   private readonly refreshTokenKey = 'refresh_token';
   private readonly tokenSignal = signal<string | null>(this.readToken());
 
-  readonly isAuthenticated = computed(() => !!this.tokenSignal() && !this.isTokenExpired());
-  readonly currentRole = computed(() => this.extractRole(this.tokenSignal()));
-  readonly currentEmail = computed(() => this.extractEmail(this.tokenSignal()));
+  readonly isAuthenticated = computed(() => this.isLoggedIn());
+  readonly currentRole = computed(() => this.getUser()?.role ?? null);
+  readonly currentEmail = computed(() => this.getUser()?.email ?? null);
 
   login(payload: LoginRequest): Observable<AuthResponse> {
     return this.http
@@ -62,13 +69,7 @@ export class AuthService {
   }
 
   logout(): void {
-    if (!this.hasBrowserStorage()) {
-      this.tokenSignal.set(null);
-      return;
-    }
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.refreshTokenKey);
-    this.tokenSignal.set(null);
+    this.clearAuth();
   }
 
   getToken(): string | null {
@@ -76,18 +77,49 @@ export class AuthService {
   }
 
   getRole(): string | null {
-    return this.currentRole();
+    return this.getUser()?.role ?? null;
   }
 
   isLoggedIn(): boolean {
-    return this.isAuthenticated();
+    return this.getUser() !== null;
+  }
+
+  getUser(): AuthUser | null {
+    const token = this.tokenSignal();
+    if (!token) {
+      return null;
+    }
+
+    const payload = this.decodeJwt(token);
+    const email = this.extractEmailFromPayload(payload);
+    if (!email) {
+      this.clearAuth();
+      return null;
+    }
+
+    const exp = typeof payload.exp === 'number' ? payload.exp : null;
+    if (exp !== null && Date.now() >= exp * 1000) {
+      this.clearAuth();
+      return null;
+    }
+
+    return {
+      email,
+      name: this.extractNameFromPayload(payload),
+      role: this.extractRoleFromPayload(payload)
+    };
   }
 
   getUserEmail(): string | null {
-    return this.currentEmail();
+    return this.getUser()?.email ?? null;
   }
 
   private saveAuth(response: AuthResponse): void {
+    if (!response.token || !this.isValidToken(response.token)) {
+      this.clearAuth();
+      return;
+    }
+
     if (!this.hasBrowserStorage()) {
       this.tokenSignal.set(response.token);
       return;
@@ -104,42 +136,37 @@ export class AuthService {
   }
 
   private isTokenExpired(): boolean {
-    const token = this.tokenSignal();
-    if (!token) {
-      return true;
-    }
-
-    const payload = this.decodeJwt(token);
-    const exp = typeof payload.exp === 'number' ? payload.exp : null;
-    if (!exp) {
-      return false;
-    }
-
-    return Date.now() >= exp * 1000;
+    return this.getUser() === null;
   }
 
   private readToken(): string | null {
     if (!this.hasBrowserStorage()) {
       return null;
     }
-    return localStorage.getItem(this.tokenKey);
-  }
-
-  private extractEmail(token: string | null): string | null {
+    const token = localStorage.getItem(this.tokenKey);
     if (!token) {
       return null;
     }
 
-    const payload = this.decodeJwt(token);
-    return typeof payload.sub === 'string' ? payload.sub : null;
-  }
-
-  private extractRole(token: string | null): string | null {
-    if (!token) {
+    if (!this.isValidToken(token)) {
+      this.clearAuth();
       return null;
     }
 
-    const payload = this.decodeJwt(token);
+    return token;
+  }
+
+  private extractEmailFromPayload(payload: JwtPayload): string | null {
+    if (typeof payload.email === 'string' && payload.email.trim()) {
+      return payload.email;
+    }
+    if (typeof payload.sub === 'string' && payload.sub.trim()) {
+      return payload.sub;
+    }
+    return null;
+  }
+
+  private extractRoleFromPayload(payload: JwtPayload): string | null {
     const roleClaim = payload.role ?? payload.roles;
 
     if (Array.isArray(roleClaim)) {
@@ -147,6 +174,34 @@ export class AuthService {
     }
 
     return roleClaim ? String(roleClaim) : null;
+  }
+
+  private extractNameFromPayload(payload: JwtPayload): string | null {
+    if (typeof payload.name === 'string' && payload.name.trim()) {
+      return payload.name.trim();
+    }
+
+    const email = this.extractEmailFromPayload(payload);
+    if (!email) {
+      return null;
+    }
+
+    const base = email.split('@')[0].split(/[._-]/)[0];
+    return base ? `${base.charAt(0).toUpperCase()}${base.slice(1)}` : null;
+  }
+
+  private isValidToken(token: string): boolean {
+    const payload = this.decodeJwt(token);
+    const email = this.extractEmailFromPayload(payload);
+    if (!email) {
+      return false;
+    }
+
+    if (typeof payload.exp === 'number' && Date.now() >= payload.exp * 1000) {
+      return false;
+    }
+
+    return true;
   }
 
   private decodeJwt(token: string): JwtPayload {
@@ -166,5 +221,13 @@ export class AuthService {
   private padBase64(base64: string): string {
     const padding = 4 - (base64.length % 4);
     return padding < 4 ? `${base64}${'='.repeat(padding)}` : base64;
+  }
+
+  private clearAuth(): void {
+    if (this.hasBrowserStorage()) {
+      localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.refreshTokenKey);
+    }
+    this.tokenSignal.set(null);
   }
 }

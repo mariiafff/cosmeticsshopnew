@@ -1,39 +1,25 @@
 package com.cosmeticsshop.controller;
 
-import com.cosmeticsshop.dto.ChatAskRequest;
+import com.cosmeticsshop.dto.ChatRequest;
 import com.cosmeticsshop.dto.ChatResponse;
-import com.cosmeticsshop.model.User;
-import com.cosmeticsshop.service.ChatbotService;
-import com.cosmeticsshop.service.UserService;
-import org.springframework.web.bind.annotation.GetMapping;
+import com.cosmeticsshop.service.ChatService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import org.springframework.security.core.Authentication;
-
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
 
-    private final ChatbotService chatbotService;
-    private final UserService userService;
+    private final ChatService chatService;
 
-    public ChatController(ChatbotService chatbotService, UserService userService) {
-        this.chatbotService = chatbotService;
-        this.userService = userService;
-    }
-
-    @GetMapping("/messages")
-    public List<String> getMessages() {
-        return List.of("Ask about revenue, orders, products, categories, or shipments.");
+    public ChatController(ChatService chatService) {
+        this.chatService = chatService;
     }
 
     @PostMapping("/ask")
-    public ChatResponse ask(@RequestBody ChatAskRequest request, Authentication authentication) {
-        User user = userService.getUserByEmail(authentication.getName());
-        return chatbotService.ask(request.getQuestion(), user);
+    public ChatResponse ask(@RequestBody ChatRequest request) {
+        return chatService.ask(request);
     }
 }

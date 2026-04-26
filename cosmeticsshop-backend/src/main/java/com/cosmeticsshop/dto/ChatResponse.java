@@ -5,50 +5,66 @@ import java.util.Map;
 
 public class ChatResponse {
 
-    private final String question;
-    private final boolean inScope;
-    private final String sqlQuery;
-    private final String answer;
-    private final String visualizationHint;
-    private final List<Map<String, Object>> rows;
+    private String question;
+    private String generatedSql;
+    private List<Map<String, Object>> rows;
+    private String message;
+    private long executionTimeMs;
+
+    public ChatResponse() {
+    }
 
     public ChatResponse(
             String question,
-            boolean inScope,
-            String sqlQuery,
-            String answer,
-            String visualizationHint,
-            List<Map<String, Object>> rows
+            String generatedSql,
+            List<Map<String, Object>> rows,
+            String message,
+            long executionTimeMs
     ) {
         this.question = question;
-        this.inScope = inScope;
-        this.sqlQuery = sqlQuery;
-        this.answer = answer;
-        this.visualizationHint = visualizationHint;
+        this.generatedSql = generatedSql;
         this.rows = rows;
+        this.message = message;
+        this.executionTimeMs = executionTimeMs;
     }
 
     public String getQuestion() {
         return question;
     }
 
-    public boolean isInScope() {
-        return inScope;
+    public void setQuestion(String question) {
+        this.question = question;
     }
 
-    public String getSqlQuery() {
-        return sqlQuery;
+    public String getGeneratedSql() {
+        return generatedSql;
     }
 
-    public String getAnswer() {
-        return answer;
-    }
-
-    public String getVisualizationHint() {
-        return visualizationHint;
+    public void setGeneratedSql(String generatedSql) {
+        this.generatedSql = generatedSql;
     }
 
     public List<Map<String, Object>> getRows() {
         return rows;
+    }
+
+    public void setRows(List<Map<String, Object>> rows) {
+        this.rows = rows;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public long getExecutionTimeMs() {
+        return executionTimeMs;
+    }
+
+    public void setExecutionTimeMs(long executionTimeMs) {
+        this.executionTimeMs = executionTimeMs;
     }
 }

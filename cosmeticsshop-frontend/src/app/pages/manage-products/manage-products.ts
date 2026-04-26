@@ -58,7 +58,7 @@ export class ManageProductsPage implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.productsService.getProducts().subscribe({
+    this.productsService.getAllProducts().subscribe({
       next: (products) => {
         this.products.set(products);
         this.isLoading.set(false);
@@ -138,7 +138,7 @@ export class ManageProductsPage implements OnInit {
         this.successMessage.set(this.editingProductId ? 'Product updated successfully.' : 'Product created successfully.');
         this.isSubmitting.set(false);
         this.cancelEdit();
-        this.productsService.getProducts().subscribe((products) => this.products.set(products));
+        this.productsService.getAllProducts().subscribe((products) => this.products.set(products));
       },
       error: () => {
         this.errorMessage.set('Unable to save the product.');
@@ -149,7 +149,7 @@ export class ManageProductsPage implements OnInit {
 
   protected deleteProduct(id: number): void {
     this.productsService.deleteProduct(id).subscribe({
-      next: () => this.productsService.getProducts().subscribe((products) => this.products.set(products)),
+      next: () => this.productsService.getAllProducts().subscribe((products) => this.products.set(products)),
       error: () => this.errorMessage.set('Could not delete product.')
     });
   }

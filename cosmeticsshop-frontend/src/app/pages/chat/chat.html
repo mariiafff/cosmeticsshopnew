@@ -1,7 +1,7 @@
 <section class="chat-page">
   <header class="chat-page__header">
     <div>
-      <p class="chat-page__eyebrow">AI Assistant</p>
+      <p class="chat-page__eyebrow">AI Analytics Chat</p>
       <h1>Ask Luime</h1>
     </div>
 
@@ -32,36 +32,29 @@
     <div class="chat-card">
       <div class="chat-card__header">
         <h2>What would you like to know?</h2>
-        <button type="button" (click)="loadMessages()" [disabled]="isLoading()">Refresh</button>
       </div>
 
       <div class="chat-examples">
-        <button type="button" *ngFor="let example of examples" (click)="useExample(example)">
+        <button type="button" *ngFor="let example of examples" (click)="runExample(example)" [disabled]="loading()">
           {{ example }}
         </button>
       </div>
 
-      <p class="chat-status" *ngIf="isLoading()">Loading messages...</p>
-      <p class="chat-status chat-status--error" *ngIf="!isLoading() && errorMessage()">{{ errorMessage() }}</p>
+      <p class="chat-status" *ngIf="loading()">Loading analytics answer...</p>
+      <p class="chat-status chat-status--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
-      <ul class="chat-list" *ngIf="!isLoading() && !errorMessage() && tips().length">
-        <li class="chat-item" *ngFor="let tip of tips()">
-          <p class="chat-item__text">{{ tip }}</p>
-        </li>
-      </ul>
-
-      <ul class="chat-list" *ngIf="responses().length">
-        <li class="chat-item" *ngFor="let response of responses()">
+      <section class="chat-result" *ngIf="response() as response">
+        <div class="chat-item">
           <div class="chat-item__meta">
             <span class="chat-item__sender">Question</span>
-            <span>{{ response.inScope ? 'In scope' : 'Out of scope' }}</span>
+            <span *ngIf="response.executionTimeMs !== undefined">{{ response.executionTimeMs }} ms</span>
           </div>
           <p class="chat-item__text">{{ response.question }}</p>
-          <p class="chat-item__answer">{{ response.answer }}</p>
+          <p class="chat-item__answer">{{ response.message }}</p>
 
-          <div class="chat-item__sql" *ngIf="response.sqlQuery">
-            <span>How the answer was found</span>
-            <code>{{ response.sqlQuery }}</code>
+          <div class="chat-item__sql" *ngIf="response.generatedSql">
+            <span>Generated SQL</span>
+            <code>{{ response.generatedSql }}</code>
           </div>
 
           <div class="chat-item__rows" *ngIf="response.rows.length">
@@ -70,24 +63,19 @@
               <table>
                 <thead>
                   <tr>
-                    <th *ngFor="let key of rowKeys(response.rows[0])">{{ key }}</th>
+                    <th *ngFor="let key of responseColumns()">{{ key }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let row of response.rows.slice(0, 5)">
-                    <td *ngFor="let key of rowKeys(row)">{{ row[key] }}</td>
+                  <tr *ngFor="let row of response.rows">
+                    <td *ngFor="let key of responseColumns()">{{ row[key] }}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
-
-          <div class="chat-item__rows" *ngIf="response.visualizationHint">
-            <span>Suggested view</span>
-            <strong>{{ response.visualizationHint }}</strong>
-          </div>
-        </li>
-      </ul>
+        </div>
+      </section>
 
       <form class="chat-form" (ngSubmit)="sendMessage()">
         <textarea
@@ -98,8 +86,8 @@
         ></textarea>
 
         <div class="chat-form__actions">
-          <button type="submit" [disabled]="isSending() || !newMessage.trim()">
-            {{ isSending() ? 'Thinking...' : 'Ask assistant' }}
+          <button type="submit" [disabled]="loading() || !newMessage.trim()">
+            {{ loading() ? 'Thinking...' : 'Send' }}
           </button>
         </div>
       </form>
