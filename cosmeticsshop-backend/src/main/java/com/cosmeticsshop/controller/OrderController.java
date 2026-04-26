@@ -1,9 +1,11 @@
 package com.cosmeticsshop.controller;
 
+import com.cosmeticsshop.dto.CheckoutRequest;
 import com.cosmeticsshop.dto.CreateOrderRequest;
 import com.cosmeticsshop.dto.OrderResponse;
 import com.cosmeticsshop.model.Order;
 import com.cosmeticsshop.model.User;
+import com.cosmeticsshop.repository.StoreRepository;
 import com.cosmeticsshop.repository.UserRepository;
 import com.cosmeticsshop.service.OrderService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,16 +28,29 @@ public class OrderController {
 
     private final OrderService orderService;
     private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
 
-    public OrderController(OrderService orderService, UserRepository userRepository) {
+    public OrderController(OrderService orderService, UserRepository userRepository, StoreRepository storeRepository) {
         this.orderService = orderService;
         this.userRepository = userRepository;
+        this.storeRepository = storeRepository;
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CORPORATE')")
-    public List<Order> getAllOrders() {
-        return orderService.getAllOrders();
+    public List<OrderResponse> getAllOrders() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email).orElseThrow();
+
+        if ("CORPORATE".equalsIgnoreCase(user.getRole())) {
+            List<Long> storeIds = storeRepository.findByOwnerUserId(user.getId()).stream()
+                    .map(store -> store.getId())
+                    .toList();
+            return orderService.getOrderResponsesByStoreIds(storeIds);
+        }
+
+        return orderService.getAllOrderResponses();
     }
 
     @PostMapping
@@ -46,6 +61,14 @@ public class OrderController {
         return orderService.createOrderResponse(user, request);
     }
 
+    @PostMapping("/checkout")
+    public OrderResponse checkout(@RequestBody CheckoutRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email).orElseThrow();
+        return orderService.checkout(user, request);
+    }
+
     @GetMapping("/{id}")
     public Order getOrderById(@PathVariable Long id) {
         return orderService.getOrderById(id);
@@ -54,11 +77,21 @@ public class OrderController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'CORPORATE')")
     public Order updateOrder(@PathVariable Long id, @RequestBody Order order) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email).orElseThrow();
+
+        if ("CORPORATE".equalsIgnoreCase(user.getRole())) {
+            List<Long> storeIds = storeRepository.findByOwnerUserId(user.getId()).stream()
+                    .map(store -> store.getId())
+                    .toList();
+            return orderService.updateOrderForStores(id, order, storeIds);
+        }
         return orderService.updateOrder(id, order);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CORPORATE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
     }

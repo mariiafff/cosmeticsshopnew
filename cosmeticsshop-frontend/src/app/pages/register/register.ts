@@ -41,7 +41,7 @@ export class RegisterPage {
     this.authService.register(this.registration).subscribe({
       next: () => {
         this.isSubmitting.set(false);
-        void this.router.navigate(['/dashboard']);
+        void this.router.navigate(['/login'], { queryParams: { registered: 'true' } });
       },
       error: (error: HttpErrorResponse) => {
         console.error('Registration failed:', error.error ?? error.message);

@@ -3,19 +3,20 @@
     <div class="dashboard-page__hero-copy">
       <h1>Luime</h1>
       <p class="dashboard-page__summary">
-        Refined skincare, luminous makeup, signature fragrance, and everyday rituals curated
-        with quiet luxury.
+        Discover thousands of products across multiple categories. Shop smarter with real-time
+        insights and a seamless experience.
       </p>
+      <p class="dashboard-page__subsummary">Smart shopping powered by analytics.</p>
 
     <nav class="dashboard-page__actions" aria-label="Primary navigation">
-      <a routerLink="/products" *ngIf="role() !== 'Guest'">Products</a>
-      <a routerLink="/orders" *ngIf="role() !== 'Guest'">Orders</a>
+      <a routerLink="/products" *ngIf="role() !== 'Guest'">Shop Products</a>
+      <a routerLink="/orders" *ngIf="role() !== 'Guest'">My Orders</a>
       <a routerLink="/manage/products" *ngIf="role() === 'CORPORATE' || role() === 'ADMIN'">Manage Products</a>
       <a routerLink="/manage/orders" *ngIf="role() === 'CORPORATE' || role() === 'ADMIN'">Manage Orders</a>
       <a routerLink="/admin/users" *ngIf="role() === 'ADMIN'">Admin Users</a>
       <a routerLink="/admin/stores" *ngIf="role() === 'ADMIN'">Admin Stores</a>
       <a routerLink="/admin/categories" *ngIf="role() === 'ADMIN'">Admin Categories</a>
-      <a routerLink="/chat" *ngIf="role() !== 'Guest'">AI Analytics Chat</a>
+      <a routerLink="/chat" *ngIf="role() !== 'Guest'">AI Insights</a>
       <a routerLink="/login" *ngIf="role() === 'Guest'">Login</a>
       <a routerLink="/register" *ngIf="role() === 'Guest'">Register</a>
     </nav>
@@ -23,16 +24,17 @@
   </header>
 
   <section class="dashboard-strip" aria-label="Featured departments">
-    <span>Skincare</span>
-    <span>Makeup</span>
-    <span>Fragrance</span>
-    <span>Hair care</span>
-    <span>Gift sets</span>
+    <span>Electronics</span>
+    <span>Home &amp; Living</span>
+    <span>Fashion</span>
+    <span>Accessories</span>
+    <span>Office</span>
+    <span>Lifestyle</span>
   </section>
 
   <section class="dashboard-section">
-    <p class="dashboard-page__eyebrow">Maison favorites</p>
-    <h2>Shop the signatures</h2>
+    <p class="dashboard-page__eyebrow">Marketplace highlights</p>
+    <h2>Explore top categories</h2>
   </section>
 
   <section class="dashboard-page__grid">
@@ -49,13 +51,13 @@
     <article class="dashboard-panel">
       <div class="dashboard-panel__header">
         <div>
-          <p class="dashboard-page__eyebrow">New arrival</p>
-          <h2>Velvet Rose Lip Oil</h2>
+          <p class="dashboard-page__eyebrow">Marketplace spotlight</p>
+          <h2>Trending picks this week</h2>
         </div>
       </div>
       <p class="dashboard-panel__copy">
-        A glossy rose tint with a soft veil of shine. Designed for daily wear, evening bags,
-        and the quiet confidence of a finishing touch.
+        Discover standout products from fast-moving categories, compare options quickly,
+        and shop with confidence across the marketplace.
       </p>
       <a class="dashboard-panel__link" routerLink="/products">Discover products</a>
     </article>
@@ -63,8 +65,8 @@
     <article class="dashboard-panel">
       <div class="dashboard-panel__header">
         <div>
-          <p class="dashboard-page__eyebrow">Collections</p>
-          <h2>Shop by mood</h2>
+          <p class="dashboard-page__eyebrow">Browse smarter</p>
+          <h2>Shop by category</h2>
         </div>
       </div>
       <ol class="dashboard-workflow">

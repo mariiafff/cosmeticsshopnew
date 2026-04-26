@@ -3,7 +3,7 @@
     <p class="auth-card__eyebrow">Welcome back</p>
     <h1>Login</h1>
     <p class="auth-card__text">
-      Sign in to shop faster, track orders, manage your store, or see your beauty profile.
+      Sign in to shop faster, track orders, manage your store, and explore the marketplace.
     </p>
 
     <label class="auth-field">
@@ -47,6 +47,10 @@
     <button type="submit" [disabled]="isSubmitting()">
       {{ isSubmitting() ? 'Logging in...' : 'Login' }}
     </button>
+
+    @if (successMessage()) {
+      <p class="auth-message auth-message--success">{{ successMessage() }}</p>
+    }
 
     @if (errorMessage()) {
       <p class="auth-message auth-message--error">{{ errorMessage() }}</p>

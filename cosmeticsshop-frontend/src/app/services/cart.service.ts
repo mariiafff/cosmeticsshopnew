@@ -46,9 +46,16 @@ export class CartService {
   }
 
   updateQuantity(productId: number, quantity: number): void {
+    const safeQuantity = Number.isFinite(quantity) && quantity >= 1 ? Math.floor(quantity) : 1;
     const next = this.itemsSignal()
-      .map((item) => (item.productId === productId ? { ...item, quantity } : item))
+      .map((item) => (item.productId === productId ? { ...item, quantity: safeQuantity } : item))
       .filter((item) => item.quantity > 0);
+    this.itemsSignal.set(next);
+    this.saveCart(next);
+  }
+
+  removeItem(productId: number): void {
+    const next = this.itemsSignal().filter((item) => item.productId !== productId);
     this.itemsSignal.set(next);
     this.saveCart(next);
   }

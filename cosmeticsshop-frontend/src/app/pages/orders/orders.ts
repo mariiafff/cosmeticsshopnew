@@ -1,12 +1,10 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
 
 import { Order, OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
-import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-orders-page',
@@ -17,14 +15,14 @@ import { CartService } from '../../services/cart.service';
 })
 export class OrdersPage implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
   private readonly authService = inject(AuthService);
-  private readonly cartService = inject(CartService);
 
   protected readonly orders = signal<Order[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly successMessage = signal('');
   protected readonly role = computed(() => this.authService.getRole() ?? 'Guest');
   protected readonly roleSummary = computed(() => {
     const role = this.role().toUpperCase();
@@ -43,8 +41,8 @@ export class OrdersPage implements OnInit {
       return;
     }
 
-    if (this.route.snapshot.queryParamMap.get('payment') === 'success') {
-      this.createOrdersFromPaidCart();
+    if (!this.authService.isLoggedIn()) {
+      void this.router.navigate(['/login']);
       return;
     }
 
@@ -72,37 +70,6 @@ export class OrdersPage implements OnInit {
       const firstTime = first.createdAt ? new Date(first.createdAt).getTime() : 0;
       const secondTime = second.createdAt ? new Date(second.createdAt).getTime() : 0;
       return secondTime - firstTime;
-    });
-  }
-
-  private createOrdersFromPaidCart(): void {
-    const cartItems = this.cartService.items();
-
-    if (cartItems.length === 0) {
-      this.loadOrders();
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    forkJoin(
-      cartItems.map((item) =>
-        this.orderService.createOrder({
-          productId: item.productId,
-          quantity: item.quantity,
-          paymentMethod: 'CARD'
-        })
-      )
-    ).subscribe({
-      next: () => {
-        this.cartService.clear();
-        this.loadOrders();
-      },
-      error: () => {
-        this.errorMessage.set('Payment finished, but we could not save the order yet. Please refresh or try again.');
-        this.isLoading.set(false);
-      }
     });
   }
 }

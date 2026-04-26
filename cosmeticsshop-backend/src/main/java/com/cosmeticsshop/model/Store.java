@@ -7,12 +7,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(
         name = "stores",
         indexes = {
-                @Index(name = "idx_store_owner", columnList = "ownerUserId"),
+                @Index(name = "idx_store_owner", columnList = "owner_id"),
                 @Index(name = "idx_store_status", columnList = "status")
         }
 )
@@ -28,15 +29,16 @@ public class Store {
     @Column(nullable = false, length = 40)
     private String status = "OPEN";
 
+    @Column(name = "owner_id")
     private Long ownerUserId;
 
-    @Column(length = 100)
+    @Transient
     private String city;
 
-    @Column(length = 100)
+    @Transient
     private String country;
 
-    @Column(length = 1200)
+    @Transient
     private String description;
 
     public Long getId() {

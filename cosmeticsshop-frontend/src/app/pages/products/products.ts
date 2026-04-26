@@ -15,16 +15,19 @@ import { CartService } from '../../services/cart.service';
 })
 export class ProductsPage implements OnInit {
   private static readonly PAGE_SIZE = 24;
+  private static readonly TOAST_DURATION_MS = 2500;
+  protected readonly fallbackImage = 'https://via.placeholder.com/300';
 
   private readonly productsService = inject(ProductsService);
   private readonly authService = inject(AuthService);
   private readonly cartService = inject(CartService);
+  private toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly products = signal<Product[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly isLoadingMore = signal(false);
   protected readonly errorMessage = signal('');
-  protected readonly successMessage = signal('');
+  protected readonly toastMessage = signal('');
   protected readonly currentPage = signal(0);
   protected readonly totalPages = signal(0);
   protected readonly totalElements = signal(0);
@@ -91,6 +94,8 @@ export class ProductsPage implements OnInit {
       sort: this.resolveSort()
     }).subscribe({
       next: (response) => {
+        console.log('Products API response:', response);
+        console.log('First product imageUrl:', response.content?.[0]?.imageUrl);
         this.applyPage(response, loadMore);
         this.isLoading.set(false);
         this.isLoadingMore.set(false);
@@ -119,13 +124,25 @@ export class ProductsPage implements OnInit {
     return stock > 0 ? `Stock: ${stock}` : 'Stock: N/A';
   }
 
+  protected getProductImage(product: Product): string {
+    return product.imageUrl || this.fallbackImage;
+  }
+
+  protected onImageError(event: Event): void {
+    const image = event.target as HTMLImageElement | null;
+    if (!image) {
+      return;
+    }
+    image.src = this.fallbackImage;
+  }
+
   protected trackByProductId(_index: number, product: Product): number {
     return product.id;
   }
 
   protected addToCart(product: Product): void {
     this.cartService.addProduct(product);
-    this.successMessage.set(`${product.name} added to cart.`);
+    this.showToast(`${product.name} added to cart.`);
   }
 
   private applyPage(response: ProductsPageResponse, append: boolean): void {
@@ -147,5 +164,18 @@ export class ProductsPage implements OnInit {
       return 'stock,desc';
     }
     return 'name,asc';
+  }
+
+  private showToast(message: string): void {
+    this.toastMessage.set(message);
+
+    if (this.toastTimeoutId) {
+      clearTimeout(this.toastTimeoutId);
+    }
+
+    this.toastTimeoutId = setTimeout(() => {
+      this.toastMessage.set('');
+      this.toastTimeoutId = null;
+    }, ProductsPage.TOAST_DURATION_MS);
   }
 }

@@ -1,7 +1,7 @@
 <section class="products-page">
   <header class="products-page__header">
     <div>
-      <p class="products-page__eyebrow">Beauty shop</p>
+      <p class="products-page__eyebrow">Marketplace</p>
       <h1>Shop Products</h1>
     </div>
 
@@ -78,13 +78,20 @@
         <p class="products-page__state">Loading products...</p>
       } @else if (errorMessage()) {
         <p class="products-page__state products-page__state--error">{{ errorMessage() }}</p>
-      } @else if (successMessage()) {
-        <p class="products-page__state products-page__state--success">{{ successMessage() }}</p>
       } @else if (filteredProducts().length === 0) {
         <p class="products-page__state">No products match your search yet.</p>
       } @else {
         <ul class="products-page__grid">
           <li *ngFor="let product of filteredProducts(); trackBy: trackByProductId" class="product-card">
+            <div class="product-image-wrap">
+              <img
+                class="product-image"
+                [src]="getProductImage(product)"
+                [alt]="product.name"
+                (error)="onImageError($event)"
+              />
+            </div>
+            <small class="image-debug">{{ product.imageUrl }}</small>
             <p class="product-card__id">#{{ product.id }} · {{ product.sku || 'No SKU' }}</p>
             <h3>{{ product.name }}</h3>
             <p class="product-card__meta">
@@ -111,4 +118,10 @@
       }
     </div>
   </section>
+
+  @if (toastMessage()) {
+    <div class="products-page__toast" role="status" aria-live="polite">
+      {{ toastMessage() }}
+    </div>
+  }
 </section>

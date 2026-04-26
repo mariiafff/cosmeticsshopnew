@@ -1,16 +1,131 @@
-/* Manage orders page styling placeholder */
+.manage-orders-page {
+  display: grid;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.manage-orders-page__header,
+.manage-orders-page__actions,
+.manage-orders-page table {
+  border: 1px solid #e4ddd4;
+  background: #fffdf9;
+}
+
+.manage-orders-page__header,
+.manage-orders-page__actions {
+  padding: 1.5rem;
+}
+
+.manage-orders-page__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.manage-orders-page__eyebrow {
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  color: #7b6f63;
+}
+
+.manage-orders-page__header h1 {
+  margin: 0 0 0.75rem;
+}
+
+.manage-orders-page__header p:last-child {
+  margin: 0;
+  color: #5a4f45;
+}
+
+.manage-orders-page__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.manage-orders-page button,
+.manage-orders-page select {
+  font: inherit;
+}
+
+.manage-orders-page button {
+  padding: 0.7rem 1rem;
+  border: 1px solid #1f1a17;
+  background: #1f1a17;
+  color: #fff;
+  cursor: pointer;
+}
+
+.manage-orders-page td button:last-child {
+  background: transparent;
+  color: #1f1a17;
+}
+
 .manage-orders-page table {
   width: 100%;
   border-collapse: collapse;
 }
+
 .manage-orders-page th,
 .manage-orders-page td {
-  border: 1px solid #ddd;
-  padding: 8px;
+  padding: 0.9rem 0.75rem;
+  border-bottom: 1px solid #ece4da;
+  text-align: left;
+  vertical-align: top;
 }
-.manage-orders-page__actions {
-  margin-bottom: 1rem;
+
+.manage-orders-page th {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6a5c50;
 }
+
 .manage-orders-page select {
   min-width: 150px;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid #d8cfc5;
+  background: #fff;
+}
+
+.form-message {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid transparent;
+}
+
+.form-message--success {
+  color: #175c35;
+  background: #eef8f0;
+  border-color: #cfe5d5;
+}
+
+.form-message--error {
+  color: #8a2e2e;
+  background: #fff1f1;
+  border-color: #f0c5c5;
+}
+
+.form-message--warning {
+  color: #76571a;
+  background: #fff8e7;
+  border-color: #ebdbab;
+}
+
+@media (max-width: 900px) {
+  .manage-orders-page {
+    padding: 1rem;
+  }
+
+  .manage-orders-page__header {
+    flex-direction: column;
+  }
+
+  .manage-orders-page {
+    overflow-x: auto;
+  }
 }

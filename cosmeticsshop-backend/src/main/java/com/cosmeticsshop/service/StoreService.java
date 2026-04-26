@@ -6,6 +6,7 @@ import com.cosmeticsshop.repository.StoreRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class StoreService {
@@ -20,12 +21,28 @@ public class StoreService {
         return storeRepository.findAll();
     }
 
+    public List<Store> getStoresByOwnerUserId(Long ownerUserId) {
+        return storeRepository.findByOwnerUserId(ownerUserId);
+    }
+
+    public Optional<Store> findPrimaryStoreByOwnerUserId(Long ownerUserId) {
+        return storeRepository.findByOwnerUserId(ownerUserId).stream().findFirst();
+    }
+
     public Store getStoreById(Long id) {
         return storeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Store not found: " + id));
     }
 
     public Store save(Store store) {
+        return storeRepository.save(store);
+    }
+
+    public Store saveForOwner(Long ownerUserId, Store store) {
+        store.setOwnerUserId(ownerUserId);
+        if (store.getStatus() == null || store.getStatus().isBlank()) {
+            store.setStatus("OPEN");
+        }
         return storeRepository.save(store);
     }
 
@@ -42,5 +59,10 @@ public class StoreService {
 
     public void deleteStore(Long id) {
         storeRepository.deleteById(id);
+    }
+
+    public boolean userOwnsStore(Long ownerUserId, Long storeId) {
+        return storeRepository.findByOwnerUserId(ownerUserId).stream()
+                .anyMatch(store -> store.getId() != null && store.getId().equals(storeId));
     }
 }

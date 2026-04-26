@@ -7,10 +7,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "order_items")
+@Table(name = "order_items", schema = "public")
 public class OrderItem {
 
     @Id
@@ -19,7 +20,11 @@ public class OrderItem {
 
     private Integer quantity;
 
+    @Column(name = "unit_price")
     private Double price;
+
+    @Column(name = "subtotal", insertable = false, updatable = false)
+    private Double subtotal;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
@@ -57,6 +62,14 @@ public class OrderItem {
 
     public void setPrice(Double price) {
         this.price = price;
+    }
+
+    public Double getSubtotal() {
+        return subtotal;
+    }
+
+    public void setSubtotal(Double subtotal) {
+        this.subtotal = subtotal;
     }
 
     public Order getOrder() {

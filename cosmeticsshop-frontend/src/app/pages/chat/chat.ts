@@ -20,16 +20,18 @@ export class ChatPage {
   protected newMessage = '';
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
-  protected readonly role = computed(() => this.authService.getRole() ?? 'Guest');
-  protected readonly accessScope = computed(() => {
-    const role = this.role().toUpperCase();
-    if (role.includes('ADMIN')) {
-      return 'You can ask about marketplace sales, stores, customers, reviews, orders, and products.';
+  protected readonly user = computed(() => this.authService.getUser());
+  protected readonly role = computed(() => this.user()?.role ?? 'ANONYMOUS');
+  protected readonly sessionLabel = computed(() => {
+    const response = this.response();
+    const details = response?.securityDetails ?? {};
+    const role = String(details['role'] ?? this.role());
+    const storeId = details['storeId'];
+
+    if (storeId !== undefined && storeId !== null) {
+      return `Aktif oturum · store_id: #${storeId} · Guardrail: Açık`;
     }
-    if (role.includes('CORPORATE')) {
-      return 'You can ask about your store sales, products, stock, reviews, customers, and orders.';
-    }
-    return 'You can ask about your orders, deliveries, reviews, purchase history, and favorite categories.';
+    return `Aktif oturum · ${role} · Guardrail: Açık`;
   });
   protected readonly examples = [
     'Which membership type spends the most?',
@@ -38,6 +40,29 @@ export class ChatPage {
     'Which country generates the most revenue?'
   ];
   protected readonly pipeline = ['Ask question', 'Generate SQL', 'Validate SQL', 'Run query', 'Show results'];
+  protected readonly responseColumns = computed(() => {
+    const firstRow = this.response()?.rows?.[0];
+    return firstRow ? Object.keys(firstRow) : [];
+  });
+  protected readonly chartBars = computed(() => {
+    const chartData = this.response()?.chartData;
+    const labels = chartData?.labels ?? [];
+    const values = chartData?.values ?? [];
+    const max = values.length ? Math.max(...values) : 0;
+
+    return labels.map((label, index) => ({
+      label,
+      value: values[index] ?? 0,
+      width: max > 0 ? `${((values[index] ?? 0) / max) * 100}%` : '0%'
+    }));
+  });
+  protected readonly safeAlternative = computed(() => {
+    const response = this.response();
+    if (!response || response.status !== 'BLOCKED') {
+      return '';
+    }
+    return response.finalAnswer ?? '';
+  });
 
   protected sendMessage(): void {
     const text = this.newMessage.trim();
@@ -69,8 +94,11 @@ export class ChatPage {
     this.sendMessage();
   }
 
-  protected responseColumns(): string[] {
-    const firstRow = this.response()?.rows?.[0];
-    return firstRow ? Object.keys(firstRow) : [];
+  protected trackByColumn(_index: number, column: string): string {
+    return column;
+  }
+
+  protected trackByBar(_index: number, bar: { label: string }): string {
+    return bar.label;
   }
 }

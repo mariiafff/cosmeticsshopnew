@@ -50,6 +50,8 @@ export class AuthService {
   private readonly apiUrl = `${environment.apiBaseUrl}/auth`;
   private readonly tokenKey = 'auth_token';
   private readonly refreshTokenKey = 'refresh_token';
+  private readonly checkoutAuthTokenKey = 'luime_checkout_auth_token';
+  private readonly checkoutRefreshTokenKey = 'luime_checkout_refresh_token';
   private readonly tokenSignal = signal<string | null>(this.readToken());
 
   readonly isAuthenticated = computed(() => this.isLoggedIn());
@@ -57,15 +59,24 @@ export class AuthService {
   readonly currentEmail = computed(() => this.getUser()?.email ?? null);
 
   login(payload: LoginRequest): Observable<AuthResponse> {
+    const normalizedPayload = {
+      email: payload.email?.trim().toLowerCase() ?? '',
+      password: payload.password?.trim() ?? ''
+    };
+
     return this.http
-      .post<AuthResponse>(`${this.apiUrl}/login`, payload)
+      .post<AuthResponse>(`${this.apiUrl}/login`, normalizedPayload)
       .pipe(tap((response) => this.saveAuth(response)));
   }
 
   register(payload: RegisterRequest): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${this.apiUrl}/register`, payload)
-      .pipe(tap((response) => this.saveAuth(response)));
+    const normalizedPayload = {
+      ...payload,
+      email: payload.email?.trim().toLowerCase(),
+      password: payload.password?.trim()
+    };
+
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, normalizedPayload);
   }
 
   logout(): void {
@@ -73,7 +84,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return this.tokenSignal();
+    return this.ensureTokenAvailable();
   }
 
   getRole(): string | null {
@@ -85,7 +96,7 @@ export class AuthService {
   }
 
   getUser(): AuthUser | null {
-    const token = this.tokenSignal();
+    const token = this.ensureTokenAvailable();
     if (!token) {
       return null;
     }
@@ -114,6 +125,16 @@ export class AuthService {
     return this.getUser()?.email ?? null;
   }
 
+  restoreCheckoutTokens(): boolean {
+    const restoredToken = this.restoreTokenFromCheckoutBackup();
+    if (!restoredToken || !this.isValidToken(restoredToken)) {
+      return false;
+    }
+
+    this.tokenSignal.set(restoredToken);
+    return true;
+  }
+
   private saveAuth(response: AuthResponse): void {
     if (!response.token || !this.isValidToken(response.token)) {
       this.clearAuth();
@@ -135,6 +156,21 @@ export class AuthService {
     return typeof localStorage !== 'undefined';
   }
 
+  private ensureTokenAvailable(): string | null {
+    const currentToken = this.tokenSignal();
+    if (currentToken && this.isValidToken(currentToken)) {
+      return currentToken;
+    }
+
+    const storageToken = this.readToken();
+    if (storageToken) {
+      this.tokenSignal.set(storageToken);
+      return storageToken;
+    }
+
+    return null;
+  }
+
   private isTokenExpired(): boolean {
     return this.getUser() === null;
   }
@@ -143,7 +179,7 @@ export class AuthService {
     if (!this.hasBrowserStorage()) {
       return null;
     }
-    const token = localStorage.getItem(this.tokenKey);
+    const token = localStorage.getItem(this.tokenKey) ?? this.restoreTokenFromCheckoutBackup();
     if (!token) {
       return null;
     }
@@ -151,6 +187,26 @@ export class AuthService {
     if (!this.isValidToken(token)) {
       this.clearAuth();
       return null;
+    }
+
+    return token;
+  }
+
+  private restoreTokenFromCheckoutBackup(): string | null {
+    if (typeof sessionStorage === 'undefined') {
+      return null;
+    }
+
+    const token = sessionStorage.getItem(this.checkoutAuthTokenKey);
+    if (!token || !this.isValidToken(token)) {
+      return null;
+    }
+
+    localStorage.setItem(this.tokenKey, token);
+
+    const refreshToken = sessionStorage.getItem(this.checkoutRefreshTokenKey);
+    if (refreshToken) {
+      localStorage.setItem(this.refreshTokenKey, refreshToken);
     }
 
     return token;

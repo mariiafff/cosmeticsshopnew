@@ -10,6 +10,7 @@ public class OrderResponse {
     private Long id;
     private String orderNumber;
     private Double totalPrice;
+    private Double totalAmount;
     private String status;
     private String shipmentStatus;
     private String paymentMethod;
@@ -20,10 +21,11 @@ public class OrderResponse {
         this.id = order.getId();
         this.orderNumber = order.getOrderNumber();
         this.totalPrice = order.getTotalPrice();
+        this.totalAmount = order.getTotalPrice();
         this.status = order.getStatus();
         this.shipmentStatus = order.getShipmentStatus();
         this.paymentMethod = order.getPaymentMethod();
-        this.createdAt = order.getCreatedAt();
+        this.createdAt = order.getCreatedAt() != null ? order.getCreatedAt() : order.getOrderDate();
         this.items = items;
     }
 
@@ -37,6 +39,10 @@ public class OrderResponse {
 
     public Double getTotalPrice() {
         return totalPrice;
+    }
+
+    public Double getTotalAmount() {
+        return totalAmount;
     }
 
     public String getStatus() {

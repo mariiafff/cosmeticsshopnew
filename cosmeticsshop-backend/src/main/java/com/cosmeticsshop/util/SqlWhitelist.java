@@ -2,8 +2,10 @@ package com.cosmeticsshop.util;
 
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,24 +13,21 @@ import java.util.regex.Pattern;
 @Component
 public class SqlWhitelist {
 
-    private static final Set<String> ALLOWED_OBJECTS = Set.of(
-            "ai_safe.products",
-            "ai_safe.orders",
-            "ai_safe.order_items",
-            "ai_safe.customer_profiles",
-            "ai_safe.customer_segments",
-            "ai_safe.product_sales_summary",
-            "ai_safe.city_customer_summary",
-            "ai_safe.country_revenue_summary",
-            "ai_safe.membership_summary",
-            "ai_safe.segment_summary"
-    );
+    private static final Map<String, Set<String>> ALLOWED_OBJECTS = buildAllowedObjects();
 
     private static final Pattern TABLE_REFERENCE_PATTERN =
             Pattern.compile("\\b(?:from|join)\\s+([a-zA-Z0-9_\\.]+)", Pattern.CASE_INSENSITIVE);
 
     public boolean isAllowed(String objectName) {
-        return ALLOWED_OBJECTS.contains(normalize(objectName));
+        return ALLOWED_OBJECTS.containsKey(normalize(objectName));
+    }
+
+    public Set<String> allowedColumnsFor(String objectName) {
+        return ALLOWED_OBJECTS.getOrDefault(normalize(objectName), Set.of());
+    }
+
+    public Set<String> allowedObjectNames() {
+        return ALLOWED_OBJECTS.keySet();
     }
 
     public Set<String> extractReferencedObjects(String sql) {
@@ -42,5 +41,41 @@ public class SqlWhitelist {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static Map<String, Set<String>> buildAllowedObjects() {
+        Map<String, Set<String>> objects = new LinkedHashMap<>();
+        objects.put("ai_safe.products", Set.of(
+                "id", "sku", "stock_code", "name", "unit_price", "category_id", "store_id"
+        ));
+        objects.put("ai_safe.orders", Set.of(
+                "id", "invoice_no", "order_date", "status", "grand_total", "normalized_grand_total_usd"
+        ));
+        objects.put("ai_safe.order_items", Set.of(
+                "id", "order_id", "product_id", "quantity", "unit_price"
+        ));
+        objects.put("ai_safe.customer_profiles", Set.of(
+                "user_id", "age", "city", "membership_type", "total_spend", "items_purchased",
+                "avg_rating", "discount_applied", "satisfaction_level"
+        ));
+        objects.put("ai_safe.customer_segments", Set.of(
+                "user_id", "value_segment", "membership_type", "satisfaction_level"
+        ));
+        objects.put("ai_safe.product_sales_summary", Set.of(
+                "product_id", "product_name", "total_units_sold", "total_revenue"
+        ));
+        objects.put("ai_safe.city_customer_summary", Set.of(
+                "city", "total_customers", "avg_spend"
+        ));
+        objects.put("ai_safe.country_revenue_summary", Set.of(
+                "country", "total_revenue", "total_orders"
+        ));
+        objects.put("ai_safe.membership_summary", Set.of(
+                "membership_type", "total_customers", "avg_spend", "avg_rating"
+        ));
+        objects.put("ai_safe.segment_summary", Set.of(
+                "value_segment", "membership_type", "total_customers"
+        ));
+        return Map.copyOf(objects);
     }
 }

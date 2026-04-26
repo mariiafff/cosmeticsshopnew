@@ -9,6 +9,7 @@
   color: #151515;
 }
 
+
 .orders-page__header,
 .orders-page__content {
   width: min(1180px, 100%);
@@ -250,6 +251,11 @@ button:disabled {
 .orders-page__state--error {
   color: #b14444;
 }
+
+.orders-page__state--success {
+  color: #1f6c4b;
+}
+
 
 @media (max-width: 820px) {
   .orders-page {

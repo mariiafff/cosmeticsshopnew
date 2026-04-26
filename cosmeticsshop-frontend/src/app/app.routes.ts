@@ -70,6 +70,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/orders/orders').then((m) => m.OrdersPage)
   },
   {
+    path: 'checkout/payment-success',
+    loadComponent: () => import('./pages/checkout/checkout').then((m) => m.CheckoutPage)
+  },
+  {
     path: 'checkout',
     loadComponent: () => import('./pages/checkout/checkout').then((m) => m.CheckoutPage),
     canActivate: [AuthGuard, RoleGuard],

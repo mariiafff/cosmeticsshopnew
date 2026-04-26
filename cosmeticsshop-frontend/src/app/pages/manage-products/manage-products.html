@@ -3,69 +3,122 @@
     <div>
       <p class="manage-products-page__eyebrow">Corporate product management</p>
       <h1>Manage products</h1>
-      <p>Create, edit, and delete products across stores and categories.</p>
+      <p>Maintain your catalog, update stock, and prepare products for new orders.</p>
     </div>
     <a routerLink="/dashboard">Back to dashboard</a>
   </header>
 
-  <form class="manage-products-form" #productFormRef="ngForm" (ngSubmit)="submitProduct(productFormRef)" novalidate>
-    <label>
-      Name
-      <input [(ngModel)]="productForm.name" name="name" required />
-    </label>
-    <label>
-      Price
-      <input [(ngModel)]="productForm.price" name="price" type="number" min="0" required />
-    </label>
-    <label>
-      SKU
-      <input [(ngModel)]="productForm.sku" name="sku" />
-    </label>
-    <label>
-      Stock quantity
-      <input [(ngModel)]="productForm.stockQuantity" name="stockQuantity" type="number" min="0" />
-    </label>
-    <label>
-      Store
-      <select [(ngModel)]="productForm.storeId" name="storeId">
-        <option [ngValue]="undefined">Choose store</option>
-        <option *ngFor="let store of stores()" [ngValue]="store.id">{{ store.name }}</option>
-      </select>
-    </label>
-    <label>
-      Category
-      <select [(ngModel)]="productForm.categoryId" name="categoryId">
-        <option [ngValue]="undefined">Choose category</option>
-        <option *ngFor="let category of categories()" [ngValue]="category.id">{{ category.name }}</option>
-      </select>
-    </label>
-    <label>
-      Description
-      <textarea [(ngModel)]="productForm.description" name="description"></textarea>
-    </label>
-    <label>
-      Status
-      <select [(ngModel)]="productForm.status" name="status">
-        <option value="ACTIVE">ACTIVE</option>
-        <option value="INACTIVE">INACTIVE</option>
-      </select>
-    </label>
-    <button type="submit" [disabled]="isSubmitting()">
-      {{ editingProductId ? 'Save changes' : 'Create product' }}
-    </button>
-    <button type="button" *ngIf="editingProductId" (click)="cancelEdit()">Cancel</button>
+  <section class="manage-products-page__feedback" *ngIf="storesWarning() || categoriesWarning()">
+    <p class="form-message form-message--warning" *ngIf="storesWarning()">{{ storesWarning() }}</p>
+    <p class="form-message form-message--warning" *ngIf="categoriesWarning()">{{ categoriesWarning() }}</p>
+  </section>
+
+  <section class="manage-products-stores" *ngIf="isCorporate">
+    <div class="manage-products-stores__header">
+      <div>
+        <p class="manage-products-page__eyebrow">{{ hasStore ? 'Your stores' : 'Store setup required' }}</p>
+        <h2>{{ hasStore ? 'Store management' : 'Create your store' }}</h2>
+        <p *ngIf="hasStore">Products you create will be linked to your selected store.</p>
+        <p *ngIf="!hasStore">Create a store to start managing products and receiving orders.</p>
+      </div>
+      <button *ngIf="hasStore" type="button" (click)="toggleCreateStoreForm()">
+        {{ showCreateStoreForm() ? 'Hide store form' : 'Create store' }}
+      </button>
+    </div>
+
+    <div class="manage-products-stores__list" *ngIf="hasStore">
+      <article class="manage-products-store-card" *ngFor="let store of stores()">
+        <h3>{{ store.name }}</h3>
+        <p>Status: {{ store.status || 'OPEN' }}</p>
+        <p>ID: #{{ store.id }}</p>
+      </article>
+    </div>
+
+    <form
+      class="manage-products-store-form"
+      *ngIf="!hasStore || showCreateStoreForm()"
+      #storeFormRef="ngForm"
+      (ngSubmit)="createStore(storeFormRef)"
+      novalidate
+    >
+      <label>
+        Store name
+        <input [(ngModel)]="newStoreName" name="storeName" required />
+      </label>
+      <button type="submit" [disabled]="isCreatingStore()">Create store</button>
+      <p class="form-message form-message--success" *ngIf="storeSuccessMessage()">{{ storeSuccessMessage() }}</p>
+      <p class="form-message form-message--error" *ngIf="storeErrorMessage()">{{ storeErrorMessage() }}</p>
+    </form>
+  </section>
+
+  <form class="manage-products-form" *ngIf="!isCorporate || hasStore" #productFormRef="ngForm" (ngSubmit)="submitProduct(productFormRef)" novalidate>
+    <div class="manage-products-form__grid">
+      <label>
+        Name
+        <input [(ngModel)]="productForm.name" name="name" required />
+      </label>
+      <label>
+        Price
+        <input [(ngModel)]="productForm.price" name="price" type="number" min="0" required />
+      </label>
+      <label>
+        SKU
+        <input [(ngModel)]="productForm.sku" name="sku" />
+      </label>
+      <label>
+        Stock quantity
+        <input [(ngModel)]="productForm.stockQuantity" name="stockQuantity" type="number" min="0" />
+      </label>
+      <label *ngIf="shouldShowStoreSelector()">
+        Store
+        <select [(ngModel)]="productForm.storeId" name="storeId">
+          <option [ngValue]="undefined">Choose store</option>
+          <option *ngFor="let store of stores()" [ngValue]="store.id">{{ store.name }}</option>
+        </select>
+      </label>
+      <label *ngIf="isCorporate && !shouldShowStoreSelector()">
+        Store
+        <input [value]="currentStoreName()" readonly />
+      </label>
+      <label>
+        Category
+        <select [(ngModel)]="productForm.categoryId" name="categoryId">
+          <option [ngValue]="undefined">Choose category</option>
+          <option *ngFor="let category of categories()" [ngValue]="category.id">{{ category.name }}</option>
+        </select>
+      </label>
+      <label class="manage-products-form__wide">
+        Description
+        <textarea [(ngModel)]="productForm.description" name="description"></textarea>
+      </label>
+      <label>
+        Status
+        <select [(ngModel)]="productForm.status" name="status">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </label>
+    </div>
+    <div class="manage-products-form__actions">
+      <button type="submit" [disabled]="isSubmitting()">
+        {{ editingProductId ? 'Save changes' : 'Create product' }}
+      </button>
+      <button type="button" *ngIf="editingProductId" (click)="cancelEdit()">Cancel</button>
+    </div>
     <p class="form-message form-message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
     <p class="form-message form-message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
   </form>
 
-  <section>
+  <section class="manage-products-list">
     <div class="manage-products-actions">
       <button type="button" (click)="refresh()">Refresh list</button>
     </div>
     @if (isLoading()) {
       <p>Loading products...</p>
-    } @else if (products().length === 0) {
-      <p>No products available.</p>
+    } @else if (isCorporate && !hasStore) {
+      <p>You do not have a store yet. Create a store to start managing products and orders.</p>
+    } @else if (!errorMessage() && products().length === 0) {
+      <p>No products found for your store yet.</p>
     } @else {
       <table>
         <thead>
@@ -83,13 +136,14 @@
           <tr *ngFor="let product of products()">
             <td>{{ product.id }}</td>
             <td>{{ product.name }}</td>
-            <td>{{ product.store?.name || '-' }}</td>
-            <td>{{ product.category?.name || '-' }}</td>
+            <td>{{ displayStoreName(product) }}</td>
+            <td>{{ displayCategoryName(product) }}</td>
             <td>{{ product.price | currency:'USD' }}</td>
-            <td>{{ product.status || '-' }}</td>
+            <td>{{ displayStatus(product) }}</td>
             <td>
               <button type="button" (click)="editProduct(product)">Edit</button>
-              <button type="button" (click)="deleteProduct(product.id)">Delete</button>
+              <button type="button" *ngIf="canDeactivate(product)" (click)="deleteProduct(product)">Deactivate</button>
+              <button type="button" *ngIf="canActivate(product)" (click)="activateProduct(product)">Activate</button>
             </td>
           </tr>
         </tbody>

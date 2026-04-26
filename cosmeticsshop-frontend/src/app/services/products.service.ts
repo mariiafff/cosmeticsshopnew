@@ -18,18 +18,39 @@ export interface Product {
   id: number;
   name: string;
   description?: string;
+  categoryId?: number;
+  categoryName?: string;
   category?: ProductCategory;
   price?: number;
   unitPrice?: number;
   stockQuantity?: number;
   sku?: string;
+  storeId?: number;
+  storeName?: string;
   store?: ProductStore;
   status?: string;
   averageRating?: number;
   stockCode?: string;
   currencyCode?: string;
+  imageUrl?: string;
+  image_url?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+interface ProductApiDto {
+  id: number;
+  name: string;
+  description?: string;
+  price?: number;
+  stockQuantity?: number;
+  sku?: string;
+  status?: string;
+  imageUrl?: string;
+  storeId?: number;
+  storeName?: string;
+  categoryId?: number;
+  categoryName?: string;
 }
 
 export interface ProductsQuery {
@@ -84,7 +105,12 @@ export class ProductsService {
       params = params.set('sort', query.sort.trim());
     }
 
-    return this.http.get<ProductsPage>(this.apiUrl, { params });
+    return this.http.get<ProductsPageApi>(this.apiUrl, { params }).pipe(
+      map((response) => ({
+        ...response,
+        content: response.content.map((product) => this.mapProduct(product))
+      }))
+    );
   }
 
   getProducts(query: ProductsQuery = {}): Observable<Product[]> {
@@ -95,15 +121,58 @@ export class ProductsService {
     return this.getProducts({ page: 0, size, sort: 'name,asc' });
   }
 
+  getManageProducts(size = 5000): Observable<Product[]> {
+    const params = new HttpParams()
+      .set('page', 0)
+      .set('size', size)
+      .set('sort', 'name,asc');
+
+    return this.http
+      .get<ProductsPageApi>(`${this.apiUrl}/manage`, { params })
+      .pipe(map((response) => response.content.map((product) => this.mapProduct(product))));
+  }
+
   createProduct(payload: CreateProductRequest): Observable<Product> {
-    return this.http.post<Product>(this.apiUrl, payload);
+    return this.http.post<ProductApiDto>(this.apiUrl, payload).pipe(map((product) => this.mapProduct(product)));
   }
 
   updateProduct(id: number, payload: CreateProductRequest): Observable<Product> {
-    return this.http.put<Product>(`${this.apiUrl}/${id}`, payload);
+    return this.http.put<ProductApiDto>(`${this.apiUrl}/${id}`, payload).pipe(map((product) => this.mapProduct(product)));
   }
 
-  deleteProduct(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  deleteProduct(id: number): Observable<Product> {
+    return this.http.delete<ProductApiDto>(`${this.apiUrl}/${id}`).pipe(map((product) => this.mapProduct(product)));
   }
+
+  activateProduct(id: number): Observable<Product> {
+    return this.http.patch<ProductApiDto>(`${this.apiUrl}/${id}/activate`, {}).pipe(map((product) => this.mapProduct(product)));
+  }
+
+  private mapProduct(product: ProductApiDto): Product {
+    return {
+      ...product,
+      category: product.categoryId || product.categoryName
+        ? {
+            id: product.categoryId ?? 0,
+            name: product.categoryName ?? 'Uncategorized'
+          }
+        : undefined,
+      store: product.storeId || product.storeName
+        ? {
+            id: product.storeId ?? 0,
+            name: product.storeName ?? 'Not assigned'
+          }
+        : undefined
+    };
+  }
+}
+interface ProductsPageApi {
+  content: ProductApiDto[];
+  number: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  first: boolean;
+  last: boolean;
 }

@@ -6,10 +6,23 @@ import { environment } from '../../environments/environment';
 
 export interface ChatResponse {
   question: string;
-  generatedSql: string;
+  generatedSql: string | null;
   rows: Record<string, unknown>[];
   message: string;
   executionTimeMs?: number;
+  status: 'SUCCESS' | 'BLOCKED' | 'ERROR';
+  agent: 'GUARDRAIL' | 'SQL_AGENT' | 'VALIDATOR' | 'EXECUTOR' | 'ANALYSIS' | 'ERROR';
+  detectionType?: string | null;
+  securityTitle?: string | null;
+  securityDetails?: Record<string, unknown>;
+  finalAnswer?: string | null;
+  visualizationType?: 'NONE' | 'TABLE' | 'BAR' | 'LINE' | 'PIE';
+  chartData?: {
+    labels?: string[];
+    values?: number[];
+    type?: 'bar' | 'line' | 'pie';
+  };
+  steps?: string[];
 }
 
 export interface SendMessageRequest {

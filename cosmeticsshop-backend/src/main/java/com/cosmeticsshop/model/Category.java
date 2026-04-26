@@ -25,6 +25,7 @@ public class Category {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(name = "parent_category_id")
     private Long parentCategoryId;
 
     @Column(length = 600)

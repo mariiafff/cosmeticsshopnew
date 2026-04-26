@@ -83,6 +83,9 @@ public class AuthController {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists. Please login or use another email.");
         }
+        if (requestsAdminRegistration(request)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin registration is not available from the public signup form.");
+        }
 
         User user = new User();
         user.setFirstName(request.getFirstName().trim());
@@ -167,6 +170,14 @@ public class AuthController {
         return "INDIVIDUAL";
     }
 
+    private boolean requestsAdminRegistration(RegisterRequest request) {
+        return isAdminValue(request.getRole()) || isAdminValue(request.getAccountType());
+    }
+
+    private boolean isAdminValue(String value) {
+        return !isBlank(value) && "ADMIN".equalsIgnoreCase(value.trim());
+    }
+
     private String normalizeRoleValue(String value) {
         if (isBlank(value)) {
             return null;
@@ -175,7 +186,6 @@ public class AuthController {
         return switch (value.trim().toUpperCase(Locale.ROOT)) {
             case "SHOPPER", "INDIVIDUAL" -> "INDIVIDUAL";
             case "SELLER", "CORPORATE" -> "CORPORATE";
-            case "ADMIN" -> "INDIVIDUAL";
             default -> null;
         };
     }

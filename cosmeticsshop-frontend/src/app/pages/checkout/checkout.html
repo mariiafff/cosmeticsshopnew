@@ -1,60 +1,86 @@
 <section class="checkout-page">
-  <header class="checkout-page__header">
-    <div>
-      <p class="checkout-page__eyebrow">Cart</p>
-      <h1>Checkout</h1>
-    </div>
-
-    <a routerLink="/products">Continue shopping</a>
-  </header>
-
-  <form class="checkout-form" #checkoutForm="ngForm" (ngSubmit)="placeOrder(checkoutForm)" novalidate>
-    @if (cartItems().length) {
-      <ul class="checkout-items">
-        @for (item of cartItems(); track item.productId) {
-          <li>
-            <div>
-              <strong>{{ item.name }}</strong>
-              <span>{{ item.price | currency: 'USD' }}</span>
-            </div>
-
-            <label class="checkout-form__field checkout-form__field--quantity">
-              <span>Quantity</span>
-              <input
-                [ngModel]="item.quantity"
-                (ngModelChange)="updateQuantity(item.productId, $event)"
-                [name]="'quantity-' + item.productId"
-                type="number"
-                min="1"
-                required
-              />
-            </label>
-          </li>
-        }
-      </ul>
-
-      <div class="checkout-total">
-        <span>Subtotal</span>
-        <strong>{{ subtotal() | currency: 'USD' }}</strong>
+  @if (paymentCompleted()) {
+    <div class="checkout-success-screen" aria-live="polite" aria-modal="true" role="dialog">
+      <div class="checkout-success-card">
+        <div class="checkout-success-card__icon" aria-hidden="true">✓</div>
+        <h2>Payment successful</h2>
+        <p>Your order has been placed successfully.</p>
+        <span class="checkout-success-card__hint">Redirecting to your orders...</span>
       </div>
-    } @else {
-      <p class="checkout-empty">Your cart is empty.</p>
+    </div>
+  } @else {
+    <header class="checkout-page__header">
+      <div>
+        <p class="checkout-page__eyebrow">Cart</p>
+        <h1>Checkout</h1>
+      </div>
+
+      <a routerLink="/products">Continue shopping</a>
+    </header>
+
+    <form class="checkout-form" #checkoutForm="ngForm" (ngSubmit)="placeOrder(checkoutForm)" novalidate>
+      @if (cartItems().length) {
+        <ul class="checkout-items">
+          @for (item of cartItems(); track item.productId) {
+            <li>
+              <div class="checkout-item__details">
+                <strong>{{ item.name }}</strong>
+                <span>{{ item.price | currency: 'USD' }}</span>
+              </div>
+
+              <div class="checkout-item__actions">
+                <div class="checkout-stepper" aria-label="Quantity controls">
+                  <button type="button" class="checkout-stepper__button" (click)="decreaseQuantity(item.productId, item.quantity)">
+                    -
+                  </button>
+                  <span class="checkout-stepper__value">{{ item.quantity }}</span>
+                  <button type="button" class="checkout-stepper__button" (click)="increaseQuantity(item.productId, item.quantity)">
+                    +
+                  </button>
+                </div>
+
+                <button type="button" class="checkout-item__remove" (click)="removeItem(item.productId, item.name)">
+                  Remove
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+
+        <div class="checkout-total">
+          <span>Subtotal</span>
+          <strong>{{ subtotal() | currency: 'USD' }}</strong>
+        </div>
+      } @else {
+        <div class="checkout-empty">
+          <p>Your cart is empty.</p>
+          <a routerLink="/products">Continue shopping</a>
+        </div>
+      }
+
+      @if (hasCartItems()) {
+        <label class="checkout-form__field">
+          <span>Payment</span>
+          <select [(ngModel)]="paymentMethod" name="paymentMethod">
+            <option value="CARD">Card</option>
+            <option value="CASH_ON_DELIVERY">Cash on delivery</option>
+            <option value="BANK_TRANSFER">Bank transfer</option>
+          </select>
+        </label>
+
+        <button type="submit" [disabled]="isSubmitting() || checkoutForm.invalid">
+          Pay with Stripe
+        </button>
+      }
+
+      <p class="checkout-page__message checkout-page__message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
+      <p class="checkout-page__message checkout-page__message--error" *ngIf="errorMessage() && !isSubmitting()">{{ errorMessage() }}</p>
+    </form>
+
+    @if (toastMessage()) {
+      <div class="checkout-toast" role="status" aria-live="polite">
+        {{ toastMessage() }}
+      </div>
     }
-
-    <label class="checkout-form__field">
-      <span>Payment</span>
-      <select [(ngModel)]="orderRequest.paymentMethod" name="paymentMethod">
-        <option value="CARD">Card</option>
-        <option value="CASH_ON_DELIVERY">Cash on delivery</option>
-        <option value="BANK_TRANSFER">Bank transfer</option>
-      </select>
-    </label>
-
-    <button type="submit" [disabled]="isSubmitting() || checkoutForm.invalid">
-      {{ isSubmitting() ? 'Opening payment...' : 'Pay with Stripe' }}
-    </button>
-
-    <p class="checkout-page__message checkout-page__message--success" *ngIf="successMessage()">{{ successMessage() }}</p>
-    <p class="checkout-page__message checkout-page__message--error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
-  </form>
+  }
 </section>

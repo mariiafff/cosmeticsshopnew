@@ -8,6 +8,7 @@ export interface Order {
   id: number;
   orderNumber?: string;
   totalPrice?: number;
+  totalAmount?: number;
   status?: string;
   shipmentStatus?: string;
   paymentMethod?: string;
@@ -29,6 +30,16 @@ export interface CreateOrderRequest {
   paymentMethod?: string;
 }
 
+export interface CheckoutItemRequest {
+  productId: number;
+  quantity: number;
+}
+
+export interface CheckoutRequest {
+  items: CheckoutItemRequest[];
+  paymentMethod?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -46,6 +57,10 @@ export class OrderService {
 
   createOrder(payload: CreateOrderRequest): Observable<Order> {
     return this.http.post<Order>(this.apiUrl, payload);
+  }
+
+  checkout(payload: CheckoutRequest): Observable<Order> {
+    return this.http.post<Order>(`${this.apiUrl}/checkout`, payload);
   }
 
   updateOrder(id: number, payload: Order): Observable<Order> {

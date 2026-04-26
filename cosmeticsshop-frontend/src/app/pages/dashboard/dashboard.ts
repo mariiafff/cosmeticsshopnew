@@ -15,21 +15,21 @@ export class DashboardPage {
 
   protected readonly collections = [
     {
-      eyebrow: 'Skincare',
-      title: 'Radiance Ritual',
-      text: 'Serums, creams, and daily essentials for skin that looks rested and luminous.'
+      eyebrow: 'Electronics',
+      title: 'Connected Essentials',
+      text: 'Explore everyday tech, practical devices, and top-rated accessories in one place.'
     },
     {
-      eyebrow: 'Makeup',
-      title: 'Soft Couture',
-      text: 'Velvet lips, clean complexion, satin blush, and softly defined eyes.'
+      eyebrow: 'Home & Living',
+      title: 'Everyday Upgrades',
+      text: 'Find useful items for your home, workspace, and routines with quick comparisons.'
     },
     {
-      eyebrow: 'Fragrance',
-      title: 'Private Scent',
-      text: 'Elegant notes for morning, evening, and everything between.'
+      eyebrow: 'Fashion',
+      title: 'Current Picks',
+      text: 'Browse popular styles, versatile accessories, and marketplace favorites that move fast.'
     }
   ];
 
-  protected readonly moods = ['Clean skincare', 'Soft glam makeup', 'Signature scents', 'Hair essentials'];
+  protected readonly moods = ['Electronics', 'Home & Living', 'Office', 'Lifestyle'];
 }

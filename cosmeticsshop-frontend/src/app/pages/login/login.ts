@@ -1,6 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -12,9 +12,10 @@ import { AuthService, LoginRequest } from '../../services/auth.service';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class LoginPage {
+export class LoginPage implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
@@ -25,11 +26,20 @@ export class LoginPage {
     password: ''
   };
 
+  ngOnInit(): void {
+    if (this.route.snapshot.queryParams['registered'] === 'true') {
+      this.successMessage.set('Registration successful. Please login.');
+    }
+  }
+
   protected login(form: NgForm): void {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    if (form.invalid) {
+    this.credentials.email = this.credentials.email?.trim().toLowerCase() ?? '';
+    this.credentials.password = this.credentials.password?.trim() ?? '';
+
+    if (form.invalid || !this.credentials.email || !this.credentials.password) {
       this.errorMessage.set('Please provide a valid email and password.');
       form.control.markAllAsTouched();
       return;

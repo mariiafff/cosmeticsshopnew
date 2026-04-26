@@ -62,8 +62,14 @@ public class Product {
     @Column(name = "normalized_unit_price_usd", precision = 12, scale = 2)
     private BigDecimal normalizedUnitPriceUsd;
 
+    @Column(name = "image_url", columnDefinition = "text")
+    private String imageUrl;
+
     @Column(name = "stock_quantity")
     private Integer stockQuantity = 0;
+
+    @Column(length = 20)
+    private String status = "ACTIVE";
 
     @Column(length = 120)
     private String style;
@@ -117,8 +123,8 @@ public class Product {
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
 
-    public String getStatus() { return null; }
-    public void setStatus(String status) { }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public Double getAverageRating() { return null; }
     public void setAverageRating(Double averageRating) { }
@@ -128,6 +134,9 @@ public class Product {
 
     public BigDecimal getNormalizedUnitPriceUsd() { return normalizedUnitPriceUsd; }
     public void setNormalizedUnitPriceUsd(BigDecimal normalizedUnitPriceUsd) { this.normalizedUnitPriceUsd = normalizedUnitPriceUsd; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     public String getStyle() { return style; }
     public void setStyle(String style) { this.style = style; }
