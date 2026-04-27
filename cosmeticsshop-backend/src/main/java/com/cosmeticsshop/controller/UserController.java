@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 
 @RestController
@@ -27,8 +29,11 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    public Page<User> getAllUsers(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int size
+    ) {
+        return userService.getAllUsers(PageRequest.of(page, size));
     }
 
     @GetMapping("/me")

@@ -179,14 +179,15 @@ export class AuthService {
     if (!this.hasBrowserStorage()) {
       return null;
     }
-    const token = localStorage.getItem(this.tokenKey) ?? this.restoreTokenFromCheckoutBackup();
-    if (!token) {
-      return null;
+
+    let token = localStorage.getItem(this.tokenKey);
+    if (token && !this.isValidToken(token)) {
+      this.clearAuth();
+      token = null;
     }
 
-    if (!this.isValidToken(token)) {
-      this.clearAuth();
-      return null;
+    if (!token) {
+      token = this.restoreTokenFromCheckoutBackup();
     }
 
     return token;

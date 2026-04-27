@@ -12,6 +12,14 @@ import java.util.regex.Pattern;
 @Service
 public class GuardrailsService {
 
+    private static final List<String> GREETING_TERMS = List.of(
+            "hello", "hi", "hey", "merhaba", "selam", "good morning", "good evening"
+    );
+
+    private static final List<String> OUT_OF_SCOPE_TERMS = List.of(
+            "joke", "poem", "president", "how are you", "weather", "who is", "tell me a"
+    );
+
     private static final List<String> PROMPT_INJECTION_TERMS = List.of(
             "ignore previous instructions",
             "ignore your previous instructions",
@@ -71,7 +79,8 @@ public class GuardrailsService {
 
     private static final List<String> FILTER_BYPASS_TERMS = List.of(
             "remove store_id filter", "store_id filtresini kaldır", "all stores",
-            "all registered stores", "platform-wide", "without where clause", "without filters"
+            "all registered stores", "platform-wide", "without where clause", "without filters",
+            "global revenue", "total platform revenue", "all stores revenue", "system-wide analytics"
     );
 
     private static final Pattern STORE_ID_PATTERN = Pattern.compile("\\bstore(?:\\s*id|\\s*#|\\s*number)?\\s*[=:#]?\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
@@ -81,6 +90,21 @@ public class GuardrailsService {
 
     public GuardrailResult inspect(String question, ChatSession session) {
         String normalized = normalize(question);
+
+        if (isGreeting(normalized)) {
+            return new GuardrailResult(true, "GREETING", "INFO", "User greeted the assistant.", "Intent Detection", null, "Hello! I can help you analyze e-commerce data. Try asking something like: Which country generates the most revenue?");
+        }
+
+        if (isOutOfScope(normalized)) {
+            return GuardrailResult.block(
+                    "OUT_OF_SCOPE",
+                    "LOW",
+                    "This question is not related to e-commerce analytics.",
+                    "Out of Scope Detection",
+                    "Request Blocked",
+                    "I can only answer e-commerce analytics questions based on the available data."
+            );
+        }
 
         GuardrailResult rateFree = checkEnumeration(normalized);
         if (!rateFree.isAllowed()) {
@@ -167,15 +191,19 @@ public class GuardrailsService {
 
         for (String term : FILTER_BYPASS_TERMS) {
             if (normalized.contains(term)) {
+                String safeAlternative = "ADMIN".equals(session.role())
+                        ? "Bunun yerine güvenli özet analizler yapabilirim."
+                        : session.storeId() != null
+                                ? "Bunun yerine kendi mağazanız (#" + session.storeId() + ") için performans analizi sorabilirsiniz."
+                                : "Bunun yerine genel ürün kategorileri hakkında bilgi sorabilirsiniz.";
+
                 return GuardrailResult.block(
                         "Kapsam Dışı Sorgu",
                         "HIGH",
-                        "Bu sorgu kısıtlı veri kapsamına giriyor.",
-                        "Filter bypass attempt",
+                        "Bu sorgu kısıtlı veri kapsamına (platform-wide) giriyor.",
+                        "Filter bypass or global analytics attempt",
                         "SQL üretimi durduruldu",
-                        session.storeId() != null
-                                ? "Bunun yerine mağazanız (#" + session.storeId() + ") için güvenli karşılaştırmalar yapabilirim."
-                                : "Bunun yerine güvenli özet analizler yapabilirim."
+                        safeAlternative
                 );
             }
         }
@@ -186,6 +214,26 @@ public class GuardrailsService {
         }
 
         return GuardrailResult.allow();
+    }
+
+    private boolean isGreeting(String normalized) {
+        String clean = normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+        for (String term : GREETING_TERMS) {
+            if (clean.equals(term) || clean.startsWith(term + " ") || clean.endsWith(" " + term) || clean.contains(" " + term + " ")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isOutOfScope(String normalized) {
+        String clean = normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+        for (String term : OUT_OF_SCOPE_TERMS) {
+            if (clean.contains(term)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private GuardrailResult checkScope(ChatSession session, String normalized) {
@@ -250,6 +298,11 @@ public class GuardrailsService {
                     "SQL üretimi durduruldu",
                     "Üyelik, şehir, ülke veya ürün bazlı global özet soruları sorabilirsiniz."
             );
+        }
+
+        // Allow CORPORATE to ask about their own store
+        if ("CORPORATE".equals(session.role()) && (normalized.contains("my store") || normalized.contains("own store"))) {
+            return GuardrailResult.allow();
         }
 
         if (("INDIVIDUAL".equals(session.role()) || "CORPORATE".equals(session.role())) && asksForScopedData) {

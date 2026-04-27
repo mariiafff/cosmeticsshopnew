@@ -6,11 +6,14 @@ import com.cosmeticsshop.dto.GuardrailResult;
 import com.cosmeticsshop.exception.GeminiUnavailableException;
 import com.cosmeticsshop.service.ChatAnalysisService.VisualizationPayload;
 import com.cosmeticsshop.service.ChatSessionService.ChatSession;
+import org.springframework.dao.DataAccessException;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.text.Normalizer;
+import java.time.YearMonth;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -29,14 +32,166 @@ public class ChatService {
             "Run query",
             "Show results"
     );
+    private static final String CURRENT_MONTH_TOP_PRODUCTS_SQL = """
+            select
+                p.name as product_name,
+                sum(oi.quantity) as total_sold
+            from order_items oi
+            join products p on p.id = oi.product_id
+            join orders o on o.id = oi.order_id
+            where p.store_id = ?
+              and extract(month from o.created_at) = extract(month from current_date)
+              and extract(year from o.created_at) = extract(year from current_date)
+            group by p.id, p.name
+            order by total_sold desc
+            limit 5
+            """;
+    private static final String CURRENT_MONTH_TOP_PRODUCTS_GLOBAL_SQL = """
+            select
+                p.name as product_name,
+                sum(oi.quantity) as total_sold
+            from order_items oi
+            join products p on p.id = oi.product_id
+            join orders o on o.id = oi.order_id
+            where extract(month from o.created_at) = extract(month from current_date)
+              and extract(year from o.created_at) = extract(year from current_date)
+            group by p.id, p.name
+            order by total_sold desc
+            limit 5
+            """;
+    private static final String CURRENT_MONTH_CUSTOMER_TOP_CATEGORY_SQL = """
+            select
+                coalesce(c.name, concat('Kategori ', p.category_id), 'Kategorisiz') as category_name,
+                p.category_id,
+                sum(oi.quantity * oi.unit_price) as total_spent
+            from order_items oi
+            join products p on p.id = oi.product_id
+            left join categories c on c.id = p.category_id
+            join orders o on o.id = oi.order_id
+            where o.user_id = ?
+              and extract(month from o.created_at) = extract(month from current_date)
+              and extract(year from o.created_at) = extract(year from current_date)
+            group by c.id, c.name, p.category_id
+            order by total_spent desc
+            limit 1
+            """;
+    private static final String LATEST_CREDIT_CARD_ORDER_PRODUCTS_SQL = """
+            select
+                p.name as product_name,
+                oi.quantity,
+                oi.unit_price,
+                oi.quantity * oi.unit_price as line_total
+            from order_items oi
+            join products p on p.id = oi.product_id
+            join orders o on o.id = oi.order_id
+            where o.user_id = ?
+              and lower(o.payment_method) in ('card', 'credit_card', 'credit card', 'kredi kartı', 'kredi karti')
+              and o.id = (
+                  select o2.id
+                  from orders o2
+                  where o2.user_id = ?
+                    and lower(o2.payment_method) in ('card', 'credit_card', 'credit card', 'kredi kartı', 'kredi karti')
+                  order by o2.created_at desc, o2.id desc
+                  limit 1
+              )
+            order by oi.id
+            """;
+    private static final String LATEST_CREDIT_CARD_ORDER_EXISTS_SQL = """
+            select count(*) as order_count
+            from orders o
+            where o.user_id = ?
+              and lower(o.payment_method) in ('card', 'credit_card', 'credit card', 'kredi kartı', 'kredi karti')
+            """;
+    private static final String LAST_PRODUCTS_CATEGORY_DISTRIBUTION_SQL = """
+            select
+                case
+                    when c.name is not null then c.name
+                    when p.category_id is not null then concat('Kategori ', p.category_id)
+                    else 'Kategorisiz'
+                end as category_name,
+                p.category_id,
+                count(*) as product_count
+            from (
+                select oi.product_id
+                from order_items oi
+                join orders o on o.id = oi.order_id
+                where o.user_id = ?
+                  and o.id = (
+                      select id
+                      from orders
+                      where user_id = ?
+                      order by created_at desc, id desc
+                      limit 1
+                  )
+                order by oi.id desc
+                limit 5
+            ) recent_items
+            join products p on p.id = recent_items.product_id
+            left join categories c on c.id = p.category_id
+            group by c.id, c.name, p.category_id
+            order by product_count desc
+            """;
+    private static final String CUSTOMER_ORDER_EXISTS_SQL = """
+            select count(*) as order_count
+            from orders o
+            where o.user_id = ?
+            """;
+    private static final String TOP_REVIEWED_PRODUCTS_SQL = """
+            select
+                p.name as product_name,
+                round(cast(avg(r.star_rating) as numeric), 2) as average_rating,
+                count(r.id) as review_count
+            from reviews r
+            join products p on p.id = r.product_id
+            group by p.id, p.name
+            having count(r.id) > 0
+            order by average_rating desc, review_count desc
+            limit 3
+            """;
+    private static final String TOP_REVIEWED_PRODUCTS_BY_STORE_SQL = """
+            select
+                p.name as product_name,
+                round(cast(avg(r.star_rating) as numeric), 2) as average_rating,
+                count(r.id) as review_count
+            from reviews r
+            join products p on p.id = r.product_id
+            where p.store_id = ?
+            group by p.id, p.name
+            having count(r.id) > 0
+            order by average_rating desc, review_count desc
+            limit 3
+            """;
+    private static final String LOWEST_RATED_PRODUCTS_SQL = """
+            select
+                p.name as product_name,
+                round(cast(avg(r.star_rating) as numeric), 2) as average_rating,
+                count(r.id) as review_count
+            from reviews r
+            join products p on p.id = r.product_id
+            group by p.id, p.name
+            having count(r.id) > 0
+            order by average_rating asc, review_count desc
+            limit 2
+            """;
+    private static final String LOWEST_RATED_PRODUCTS_BY_STORE_SQL = """
+            select
+                p.name as product_name,
+                round(cast(avg(r.star_rating) as numeric), 2) as average_rating,
+                count(r.id) as review_count
+            from reviews r
+            join products p on p.id = r.product_id
+            where p.store_id = ?
+            group by p.id, p.name
+            having count(r.id) > 0
+            order by average_rating asc, review_count desc
+            limit 2
+            """;
 
     private static final Map<String, String> DEMO_FALLBACK_SQL = Map.of(
             "which membership type spends the most?",
             "select membership_type, avg_spend from ai_safe.membership_summary order by avg_spend desc limit 1",
             "which city has the most customers?",
             "select city, total_customers from ai_safe.city_customer_summary order by total_customers desc limit 1",
-            "top selling products",
-            "select product_name, total_revenue from ai_safe.product_sales_summary order by total_revenue desc limit 5",
             "which country generates the most revenue?",
             "select country, total_revenue from ai_safe.country_revenue_summary order by total_revenue desc limit 1",
             "show revenue by country",
@@ -99,12 +254,55 @@ public class ChatService {
         }
 
         GuardrailResult guardrailResult = guardrailsService.inspect(question, session);
-        if (!guardrailResult.isAllowed()) {
+        if ("GREETING".equals(guardrailResult.getCategory())) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "Greeting recognized.",
+                    elapsedMs(startTime),
+                    "SUCCESS",
+                    "INTENT",
+                    "Greeting",
+                    null,
+                    buildSessionDetails(session),
+                    chatAnalysisService.escapeHtml(guardrailResult.getSafeAlternative()),
+                    "NONE",
+                    Map.of(),
+                    List.of("Identify intent", "Greet user")
+            );
+        }
+
+        if (!guardrailResult.isAllowed() || "OUT_OF_SCOPE".equals(guardrailResult.getCategory())) {
             return buildBlockedResponse(question, guardrailResult.getReason(), guardrailResult, session, startTime);
         }
 
+        if (isCurrentMonthTopProductsIntent(question)) {
+            return answerCurrentMonthTopProducts(question, session, startTime);
+        }
+
+        if (isLatestCreditCardOrderProductsIntent(question)) {
+            return answerLatestCreditCardOrderProducts(question, session, startTime);
+        }
+
+        if (isCurrentMonthCustomerTopCategoryIntent(question)) {
+            return answerCurrentMonthCustomerTopCategory(question, session, startTime);
+        }
+
+        if (isLastProductsCategoryDistributionIntent(question)) {
+            return answerLastProductsCategoryDistribution(question, session, startTime);
+        }
+
+        if (isLowestRatedProductsIntent(question)) {
+            return answerLowestRatedProducts(question, session, startTime);
+        }
+
+        if (isTopReviewedProductsIntent(question)) {
+            return answerTopReviewedProducts(question, session, startTime);
+        }
+
         try {
-            SqlGenerationResult sqlGenerationResult = generateSqlWithRetry(question);
+            SqlGenerationResult sqlGenerationResult = generateSqlWithRetry(question, session);
             sqlSafetyService.validate(sqlGenerationResult.sql());
 
             List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
@@ -227,13 +425,13 @@ public class ChatService {
         return details;
     }
 
-    private SqlGenerationResult generateSqlWithRetry(String question) {
+    private SqlGenerationResult generateSqlWithRetry(String question, ChatSession session) {
         RuntimeException lastTransientError = null;
 
         for (int attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
             try {
                 return new SqlGenerationResult(
-                        geminiSqlService.generateSql(question),
+                        geminiSqlService.generateSql(question, session.role(), session.storeId()),
                         "Query executed successfully."
                 );
             } catch (RuntimeException ex) {
@@ -308,6 +506,651 @@ public class ChatService {
 
     private String normalizeQuestion(String question) {
         return question == null ? "" : question.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isCurrentMonthTopProductsIntent(String question) {
+        String normalized = normalizeIntentText(question);
+        boolean asksTopSelling =
+                normalized.contains("en cok satan")
+                        || normalized.contains("en cok satilan")
+                        || normalized.contains("top selling")
+                        || normalized.contains("best selling")
+                        || normalized.contains("top 5 urun")
+                        || normalized.contains("top urun")
+                        || normalized.contains("magazamda en cok satan");
+        boolean asksProduct = normalized.contains("urun") || normalized.contains("product");
+        return asksTopSelling && asksProduct;
+    }
+
+    private boolean isLatestCreditCardOrderProductsIntent(String question) {
+        String normalized = normalizeIntentText(question);
+        boolean asksCreditCard = normalized.contains("kredi kart") || normalized.contains("credit card");
+        boolean asksLatest = normalized.contains("en son") || normalized.contains("son ") || normalized.contains("last") || normalized.contains("latest");
+        boolean asksOrderOrPurchase = normalized.contains("alisveris") || normalized.contains("siparis") || normalized.contains("order");
+        boolean asksProducts = normalized.contains("urun") || normalized.contains("ne aldim") || normalized.contains("product");
+        return asksCreditCard && asksLatest && asksOrderOrPurchase && asksProducts;
+    }
+
+    private boolean isCurrentMonthCustomerTopCategoryIntent(String question) {
+        String normalized = normalizeIntentText(question);
+        boolean asksCategory = normalized.contains("kategori") || normalized.contains("category");
+        boolean asksSpending = normalized.contains("harcama") || normalized.contains("harcadim") || normalized.contains("spent") || normalized.contains("spending");
+        boolean asksTop = normalized.contains("en fazla") || normalized.contains("daha cok") || normalized.contains("most") || normalized.contains("top");
+        boolean asksCurrentMonth = normalized.contains("bu ay") || normalized.contains("bu ayki") || normalized.contains("this month");
+        return asksCategory && asksSpending && asksTop && asksCurrentMonth;
+    }
+
+    private boolean isLastProductsCategoryDistributionIntent(String question) {
+        String normalized = normalizeIntentText(question);
+        boolean asksRecentPurchase =
+                normalized.contains("son aldigim")
+                        || normalized.contains("son 5 urun")
+                        || normalized.contains("last purchases")
+                        || normalized.contains("last purchased")
+                        || normalized.contains("recent purchases");
+        boolean asksCategoryDistribution =
+                normalized.contains("kategori bazli dagilim")
+                        || normalized.contains("kategorik bazli dagilim")
+                        || normalized.contains("kategorilere gore dagilim")
+                        || normalized.contains("category distribution")
+                        || (normalized.contains("kategori") && normalized.contains("dagilim"));
+        boolean asksProducts = normalized.contains("urun") || normalized.contains("product") || normalized.contains("purchase");
+        return asksRecentPurchase && asksCategoryDistribution && asksProducts;
+    }
+
+    private boolean isTopReviewedProductsIntent(String question) {
+        String normalized = normalizeIntentText(question);
+        boolean asksProduct = normalized.contains("urun") || normalized.contains("product");
+        boolean asksReviewOrRating =
+                normalized.contains("yorumlanmis")
+                        || normalized.contains("puanlanmis")
+                        || normalized.contains("rating")
+                        || normalized.contains("reviewed")
+                        || normalized.contains("rated");
+        boolean asksBest =
+                normalized.contains("en iyi")
+                        || normalized.contains("en yuksek")
+                        || normalized.contains("top")
+                        || normalized.contains("best")
+                        || normalized.contains("highest");
+        return asksProduct && asksReviewOrRating && asksBest;
+    }
+
+    private boolean isLowestRatedProductsIntent(String question) {
+        String normalized = normalizeIntentText(question);
+        boolean asksProduct = normalized.contains("urun") || normalized.contains("product");
+        boolean asksReviewOrRating =
+                normalized.contains("yorumlanmis")
+                        || normalized.contains("puanli")
+                        || normalized.contains("puan")
+                        || normalized.contains("rating")
+                        || normalized.contains("reviewed")
+                        || normalized.contains("rated");
+        boolean asksWorst =
+                normalized.contains("en kotu")
+                        || normalized.contains("en dusuk")
+                        || normalized.contains("lowest")
+                        || normalized.contains("worst");
+        return asksProduct && asksReviewOrRating && asksWorst;
+    }
+
+    private ChatResponse answerCurrentMonthTopProducts(String question, ChatSession session, long startTime) {
+        boolean isCorporate = "CORPORATE".equals(session.role());
+        if (isCorporate && session.storeId() == null) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "No store is linked to this seller session.",
+                    elapsedMs(startTime),
+                    "SUCCESS",
+                    "ANALYSIS",
+                    null,
+                    null,
+                    buildSessionDetails(session),
+                    "Bu hesap için bağlı mağaza bulunamadı.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        String sql = isCorporate ? CURRENT_MONTH_TOP_PRODUCTS_SQL : CURRENT_MONTH_TOP_PRODUCTS_GLOBAL_SQL;
+        List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
+                isCorporate
+                        ? queryExecutionService.executeQuery(sql, session.storeId())
+                        : queryExecutionService.executeQuery(sql)
+        );
+        VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                chatAnalysisService.escapeHtml(sql),
+                rows,
+                "Top-selling products query executed successfully.",
+                elapsedMs(startTime),
+                "SUCCESS",
+                "ANALYSIS",
+                null,
+                null,
+                buildSessionDetails(session),
+                chatAnalysisService.escapeHtml(buildTopProductsAnswer(rows, isCorporate)),
+                visualization.visualizationType(),
+                visualization.chartData(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private String buildTopProductsAnswer(List<Map<String, Object>> rows, boolean scopedToStore) {
+        if (rows == null || rows.isEmpty()) {
+            return "Bu ay için satış verisi bulunamadı.";
+        }
+
+        StringBuilder answer = new StringBuilder();
+        answer.append(turkishCurrentMonthLabel())
+                .append(scopedToStore ? " için mağazanızın en çok satan 5 ürünü:" : " için en çok satan 5 ürün:");
+
+        for (int index = 0; index < rows.size(); index++) {
+            Map<String, Object> row = rows.get(index);
+            answer.append("\n")
+                    .append(index + 1)
+                    .append(". ")
+                    .append(row.get("product_name"))
+                    .append(" - ")
+                    .append(row.get("total_sold"))
+                    .append(" adet");
+        }
+
+        return answer.toString();
+    }
+
+    private ChatResponse answerLatestCreditCardOrderProducts(String question, ChatSession session, long startTime) {
+        if (!"INDIVIDUAL".equals(session.role())) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "This intent is only available for customer accounts.",
+                    elapsedMs(startTime),
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Role scope restriction",
+                    "Yetki Kapsamı",
+                    buildSessionDetails(session),
+                    "Bu soru yalnızca müşteri hesabının kendi siparişleri için yanıtlanabilir.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        if (session.userId() == null) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "Authentication is required for customer order questions.",
+                    elapsedMs(startTime),
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Authentication required",
+                    "Kimlik Doğrulama Gerekli",
+                    buildSessionDetails(session),
+                    "Siparişlerinizi görebilmem için giriş yapmanız gerekir.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
+                queryExecutionService.executeQuery(LATEST_CREDIT_CARD_ORDER_PRODUCTS_SQL, session.userId(), session.userId())
+        );
+        VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                chatAnalysisService.escapeHtml(LATEST_CREDIT_CARD_ORDER_PRODUCTS_SQL),
+                rows,
+                "Latest credit-card order products query executed successfully.",
+                elapsedMs(startTime),
+                "SUCCESS",
+                "ANALYSIS",
+                null,
+                null,
+                buildSessionDetails(session),
+                chatAnalysisService.escapeHtml(buildLatestCreditCardOrderAnswer(rows, session.userId())),
+                visualization.visualizationType(),
+                visualization.chartData(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private String buildLatestCreditCardOrderAnswer(List<Map<String, Object>> rows, Long userId) {
+        if (rows == null || rows.isEmpty()) {
+            boolean hasCreditCardOrder = hasCreditCardOrder(userId);
+            return hasCreditCardOrder
+                    ? "Son kredi kartı alışverişinizde ürün bulunamadı."
+                    : "Kredi kartı ile yapılmış bir alışverişiniz bulunamadı.";
+        }
+
+        StringBuilder answer = new StringBuilder("Son kredi kartı alışverişinizdeki ürünler:");
+        for (int index = 0; index < rows.size(); index++) {
+            Map<String, Object> row = rows.get(index);
+            answer.append("\n")
+                    .append(index + 1)
+                    .append(". ")
+                    .append(row.get("product_name"))
+                    .append(" - ")
+                    .append(row.get("quantity"))
+                    .append(" adet, birim fiyat: ")
+                    .append(row.get("unit_price"))
+                    .append(", toplam: ")
+                    .append(row.get("line_total"));
+        }
+        return answer.toString();
+    }
+
+    private boolean hasCreditCardOrder(Long userId) {
+        List<Map<String, Object>> rows = queryExecutionService.executeQuery(LATEST_CREDIT_CARD_ORDER_EXISTS_SQL, userId);
+        if (rows.isEmpty()) {
+            return false;
+        }
+        Object count = rows.get(0).get("order_count");
+        return count instanceof Number number && number.longValue() > 0;
+    }
+
+    private boolean hasAnyOrder(Long userId) {
+        List<Map<String, Object>> rows = queryExecutionService.executeQuery(CUSTOMER_ORDER_EXISTS_SQL, userId);
+        if (rows.isEmpty()) {
+            return false;
+        }
+        Object count = rows.get(0).get("order_count");
+        return count instanceof Number number && number.longValue() > 0;
+    }
+
+    private ChatResponse answerCurrentMonthCustomerTopCategory(String question, ChatSession session, long startTime) {
+        if (!"INDIVIDUAL".equals(session.role())) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "This intent is only available for customer accounts.",
+                    elapsedMs(startTime),
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Role scope restriction",
+                    "Yetki Kapsamı",
+                    buildSessionDetails(session),
+                    "Bu soru yalnızca müşteri hesabının kendi harcamaları için yanıtlanabilir.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        if (session.userId() == null) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "Authentication is required for customer spending questions.",
+                    elapsedMs(startTime),
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Authentication required",
+                    "Kimlik Doğrulama Gerekli",
+                    buildSessionDetails(session),
+                    "Harcamalarınızı görebilmem için giriş yapmanız gerekir.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
+                queryExecutionService.executeQuery(CURRENT_MONTH_CUSTOMER_TOP_CATEGORY_SQL, session.userId())
+        );
+        VisualizationPayload visualization = buildCurrentMonthTopCategoryVisualization(rows);
+
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                chatAnalysisService.escapeHtml(CURRENT_MONTH_CUSTOMER_TOP_CATEGORY_SQL),
+                rows,
+                "Current-month customer category spending query executed successfully.",
+                elapsedMs(startTime),
+                "SUCCESS",
+                "ANALYSIS",
+                null,
+                null,
+                buildSessionDetails(session),
+                chatAnalysisService.escapeHtml(buildCurrentMonthTopCategoryAnswer(rows)),
+                visualization.visualizationType(),
+                visualization.chartData(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private String buildCurrentMonthTopCategoryAnswer(List<Map<String, Object>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return "Bu ay için harcama verisi bulunamadı.";
+        }
+
+        Map<String, Object> row = rows.get(0);
+        Object categoryName = row.get("category_name");
+        if (categoryName == null || String.valueOf(categoryName).isBlank()) {
+            categoryName = row.get("category_id");
+        }
+        return "Bu ay en fazla harcama yaptığınız kategori: "
+                + categoryName
+                + " (Toplam: "
+                + row.get("total_spent")
+                + " TL)";
+    }
+
+    private VisualizationPayload buildCurrentMonthTopCategoryVisualization(List<Map<String, Object>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return new VisualizationPayload("NONE", Map.of());
+        }
+
+        Map<String, Object> row = rows.get(0);
+        Object categoryName = row.get("category_name");
+        Object totalSpent = row.get("total_spent");
+        if (categoryName == null || totalSpent == null) {
+            return new VisualizationPayload("TABLE", Map.of());
+        }
+
+        Map<String, Object> chartData = new LinkedHashMap<>();
+        chartData.put("labels", List.of(String.valueOf(categoryName)));
+        chartData.put("values", List.of(totalSpent));
+        chartData.put("type", "bar");
+        return new VisualizationPayload("BAR", chartData);
+    }
+
+    private ChatResponse answerLastProductsCategoryDistribution(String question, ChatSession session, long startTime) {
+        if (!"INDIVIDUAL".equals(session.role())) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "This intent is only available for customer accounts.",
+                    elapsedMs(startTime),
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Role scope restriction",
+                    "Yetki Kapsamı",
+                    buildSessionDetails(session),
+                    "Bu soru yalnızca müşteri hesabının kendi alışverişleri için yanıtlanabilir.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        if (session.userId() == null) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "Authentication is required for customer purchase questions.",
+                    elapsedMs(startTime),
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Authentication required",
+                    "Kimlik Doğrulama Gerekli",
+                    buildSessionDetails(session),
+                    "Alışverişlerinizi görebilmem için giriş yapmanız gerekir.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
+                queryExecutionService.executeQuery(LAST_PRODUCTS_CATEGORY_DISTRIBUTION_SQL, session.userId(), session.userId())
+        );
+        VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                chatAnalysisService.escapeHtml(LAST_PRODUCTS_CATEGORY_DISTRIBUTION_SQL),
+                rows,
+                "Last purchased products category distribution query executed successfully.",
+                elapsedMs(startTime),
+                "SUCCESS",
+                "ANALYSIS",
+                null,
+                null,
+                buildSessionDetails(session),
+                chatAnalysisService.escapeHtml(buildLastProductsCategoryDistributionAnswer(rows, session.userId())),
+                visualization.visualizationType(),
+                visualization.chartData(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private String buildLastProductsCategoryDistributionAnswer(List<Map<String, Object>> rows, Long userId) {
+        if (rows == null || rows.isEmpty()) {
+            return hasAnyOrder(userId)
+                    ? "Son siparişinizde ürün bulunamadı."
+                    : "Henüz alışveriş veriniz bulunamadı.";
+        }
+
+        StringBuilder answer = new StringBuilder("Son alışverişinizdeki ürünlerin kategori dağılımı:");
+        for (Map<String, Object> row : rows) {
+            Object categoryName = row.get("category_name");
+            if (categoryName == null || String.valueOf(categoryName).isBlank()) {
+                categoryName = row.get("category_id");
+            }
+            answer.append("\n- ")
+                    .append(categoryName)
+                    .append(": ")
+                    .append(row.get("product_count"))
+                    .append(" ürün");
+        }
+        return answer.toString();
+    }
+
+    private ChatResponse answerTopReviewedProducts(String question, ChatSession session, long startTime) {
+        boolean isCorporate = "CORPORATE".equals(session.role());
+        if (isCorporate && session.storeId() == null) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "No store is linked to this seller session.",
+                    elapsedMs(startTime),
+                    "SUCCESS",
+                    "ANALYSIS",
+                    null,
+                    null,
+                    buildSessionDetails(session),
+                    "Bu hesap için bağlı mağaza bulunamadı.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        String sql = isCorporate ? TOP_REVIEWED_PRODUCTS_BY_STORE_SQL : TOP_REVIEWED_PRODUCTS_SQL;
+        List<Map<String, Object>> rows;
+        try {
+            rows = chatAnalysisService.sanitizeRows(
+                    isCorporate
+                            ? queryExecutionService.executeQuery(sql, session.storeId())
+                            : queryExecutionService.executeQuery(sql)
+            );
+        } catch (DataAccessException dataAccessException) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "Review analytics query could not be executed.",
+                    elapsedMs(startTime),
+                    "ERROR",
+                    "ANALYSIS",
+                    null,
+                    null,
+                    buildSessionDetails(session),
+                    "Şu anda yorum analizi yapılamıyor, lütfen tekrar deneyin.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+        VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                chatAnalysisService.escapeHtml(sql),
+                rows,
+                "Top reviewed products query executed successfully.",
+                elapsedMs(startTime),
+                "SUCCESS",
+                "ANALYSIS",
+                null,
+                null,
+                buildSessionDetails(session),
+                chatAnalysisService.escapeHtml(buildTopReviewedProductsAnswer(rows)),
+                visualization.visualizationType(),
+                visualization.chartData(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private String buildTopReviewedProductsAnswer(List<Map<String, Object>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return "Henüz yorum verisi bulunamadı.";
+        }
+
+        StringBuilder answer = new StringBuilder("En iyi yorumlanmış 3 ürün:");
+        for (Map<String, Object> row : rows) {
+            answer.append("\n- ")
+                    .append(row.get("product_name"))
+                    .append(": ")
+                    .append(row.get("average_rating"))
+                    .append("/5 ortalama puan, ")
+                    .append(row.get("review_count"))
+                    .append(" yorum");
+        }
+        return answer.toString();
+    }
+
+    private ChatResponse answerLowestRatedProducts(String question, ChatSession session, long startTime) {
+        boolean isCorporate = "CORPORATE".equals(session.role());
+        if (isCorporate && session.storeId() == null) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "No store is linked to this seller session.",
+                    elapsedMs(startTime),
+                    "SUCCESS",
+                    "ANALYSIS",
+                    null,
+                    null,
+                    buildSessionDetails(session),
+                    "Bu hesap için bağlı mağaza bulunamadı.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+
+        String sql = isCorporate ? LOWEST_RATED_PRODUCTS_BY_STORE_SQL : LOWEST_RATED_PRODUCTS_SQL;
+        List<Map<String, Object>> rows;
+        try {
+            rows = chatAnalysisService.sanitizeRows(
+                    isCorporate
+                            ? queryExecutionService.executeQuery(sql, session.storeId())
+                            : queryExecutionService.executeQuery(sql)
+            );
+        } catch (DataAccessException dataAccessException) {
+            return new ChatResponse(
+                    chatAnalysisService.escapeHtml(question),
+                    null,
+                    List.of(),
+                    "Review analytics query could not be executed.",
+                    elapsedMs(startTime),
+                    "ERROR",
+                    "ANALYSIS",
+                    null,
+                    null,
+                    buildSessionDetails(session),
+                    "Şu anda yorum analizi yapılamıyor, lütfen tekrar deneyin.",
+                    "NONE",
+                    Map.of(),
+                    PIPELINE_STEPS
+            );
+        }
+        VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                chatAnalysisService.escapeHtml(sql),
+                rows,
+                "Lowest-rated products query executed successfully.",
+                elapsedMs(startTime),
+                "SUCCESS",
+                "ANALYSIS",
+                null,
+                null,
+                buildSessionDetails(session),
+                chatAnalysisService.escapeHtml(buildLowestRatedProductsAnswer(rows)),
+                visualization.visualizationType(),
+                visualization.chartData(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private String buildLowestRatedProductsAnswer(List<Map<String, Object>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return "Henüz yorum verisi bulunamadı.";
+        }
+
+        StringBuilder answer = new StringBuilder("En kötü yorumlanmış 2 ürün:");
+        for (Map<String, Object> row : rows) {
+            answer.append("\n- ")
+                    .append(row.get("product_name"))
+                    .append(": ")
+                    .append(row.get("average_rating"))
+                    .append("/5 ortalama puan, ")
+                    .append(row.get("review_count"))
+                    .append(" yorum");
+        }
+        return answer.toString();
+    }
+
+    private String turkishCurrentMonthLabel() {
+        YearMonth currentMonth = YearMonth.now();
+        String monthName = switch (currentMonth.getMonth()) {
+            case JANUARY -> "Ocak";
+            case FEBRUARY -> "Şubat";
+            case MARCH -> "Mart";
+            case APRIL -> "Nisan";
+            case MAY -> "Mayıs";
+            case JUNE -> "Haziran";
+            case JULY -> "Temmuz";
+            case AUGUST -> "Ağustos";
+            case SEPTEMBER -> "Eylül";
+            case OCTOBER -> "Ekim";
+            case NOVEMBER -> "Kasım";
+            case DECEMBER -> "Aralık";
+        };
+        return monthName + " " + currentMonth.getYear();
+    }
+
+    private String normalizeIntentText(String question) {
+        String normalized = question == null ? "" : question.trim().toLowerCase(Locale.ROOT);
+        normalized = normalized
+                .replace('ı', 'i')
+                .replace('ğ', 'g')
+                .replace('ü', 'u')
+                .replace('ş', 's')
+                .replace('ö', 'o')
+                .replace('ç', 'c');
+        normalized = Normalizer.normalize(normalized, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
     }
 
     private boolean isDevelopmentEnvironment() {

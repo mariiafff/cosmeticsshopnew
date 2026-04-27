@@ -29,8 +29,8 @@ export class AdminUsersPage implements OnInit {
     this.successMessage.set('');
 
     this.usersService.getUsers().subscribe({
-      next: (users) => {
-        this.users.set(users);
+      next: (page) => {
+        this.users.set(page.content);
         this.isLoading.set(false);
       },
       error: () => {

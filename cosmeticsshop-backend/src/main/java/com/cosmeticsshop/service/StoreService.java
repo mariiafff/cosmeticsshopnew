@@ -8,7 +8,14 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
 @Service
+@Transactional(readOnly = true)
 public class StoreService {
 
     private final StoreRepository storeRepository;
@@ -34,10 +41,12 @@ public class StoreService {
                 .orElseThrow(() -> new ResourceNotFoundException("Store not found: " + id));
     }
 
+    @Transactional
     public Store save(Store store) {
         return storeRepository.save(store);
     }
 
+    @Transactional
     public Store saveForOwner(Long ownerUserId, Store store) {
         store.setOwnerUserId(ownerUserId);
         if (store.getStatus() == null || store.getStatus().isBlank()) {
@@ -46,6 +55,7 @@ public class StoreService {
         return storeRepository.save(store);
     }
 
+    @Transactional
     public Store updateStore(Long id, Store store) {
         Store existing = getStoreById(id);
         existing.setName(store.getName());
@@ -57,6 +67,7 @@ public class StoreService {
         return storeRepository.save(existing);
     }
 
+    @Transactional
     public void deleteStore(Long id) {
         storeRepository.deleteById(id);
     }

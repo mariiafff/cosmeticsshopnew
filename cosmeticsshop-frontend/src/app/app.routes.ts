@@ -30,7 +30,7 @@ export const routes: Routes = [
     path: 'orders',
     loadComponent: () => import('./pages/orders/orders').then((m) => m.OrdersPage),
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['INDIVIDUAL', 'CORPORATE', 'ADMIN'] }
+    data: { roles: ['INDIVIDUAL'] }
   },
   {
     path: 'manage/products',
@@ -67,7 +67,9 @@ export const routes: Routes = [
   },
   {
     path: 'orders/payment-success',
-    loadComponent: () => import('./pages/orders/orders').then((m) => m.OrdersPage)
+    loadComponent: () => import('./pages/orders/orders').then((m) => m.OrdersPage),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['INDIVIDUAL'] }
   },
   {
     path: 'checkout/payment-success',
@@ -77,7 +79,7 @@ export const routes: Routes = [
     path: 'checkout',
     loadComponent: () => import('./pages/checkout/checkout').then((m) => m.CheckoutPage),
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['INDIVIDUAL', 'CORPORATE', 'ADMIN'] }
+    data: { roles: ['INDIVIDUAL'] }
   },
   {
     path: 'chat',

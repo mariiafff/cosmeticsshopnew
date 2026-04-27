@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,7 +39,7 @@ public class OrderController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CORPORATE')")
-    public List<OrderResponse> getAllOrders() {
+    public List<OrderResponse> getAllOrders(@RequestParam(defaultValue = "100") int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email).orElseThrow();
@@ -47,13 +48,14 @@ public class OrderController {
             List<Long> storeIds = storeRepository.findByOwnerUserId(user.getId()).stream()
                     .map(store -> store.getId())
                     .toList();
-            return orderService.getOrderResponsesByStoreIds(storeIds);
+            return orderService.getOrderResponsesByStoreIds(storeIds, size);
         }
 
-        return orderService.getAllOrderResponses();
+        return orderService.getRecentOrderResponses(size);
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('INDIVIDUAL')")
     public OrderResponse createOrder(@RequestBody CreateOrderRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -62,6 +64,7 @@ public class OrderController {
     }
 
     @PostMapping("/checkout")
+    @PreAuthorize("hasRole('INDIVIDUAL')")
     public OrderResponse checkout(@RequestBody CheckoutRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -97,6 +100,7 @@ public class OrderController {
     }
 
     @GetMapping("/my")
+    @PreAuthorize("hasRole('INDIVIDUAL')")
     public List<OrderResponse> getMyOrders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();

@@ -78,6 +78,32 @@ class GuardrailsServiceTest {
     }
 
     @Test
+    void allowsGreetings() {
+        GuardrailResult result = guardrailsService.inspect("Hello!", anonymous());
+        assertTrue(result.isAllowed());
+        assertTrue(result.getCategory().contains("GREETING"));
+
+        result = guardrailsService.inspect("merhaba", anonymous());
+        assertTrue(result.isAllowed());
+        assertTrue(result.getCategory().contains("GREETING"));
+    }
+
+    @Test
+    void blocksOutOfScopeQuestions() {
+        GuardrailResult result = guardrailsService.inspect("Tell me a joke", anonymous());
+        assertFalse(result.isAllowed());
+        assertTrue(result.getCategory().contains("OUT_OF_SCOPE"));
+
+        result = guardrailsService.inspect("Who is the president?", anonymous());
+        assertFalse(result.isAllowed());
+        assertTrue(result.getCategory().contains("OUT_OF_SCOPE"));
+
+        result = guardrailsService.inspect("Weather today", anonymous());
+        assertFalse(result.isAllowed());
+        assertTrue(result.getCategory().contains("OUT_OF_SCOPE"));
+    }
+
+    @Test
     void allowsSafeAggregateQuestion() {
         GuardrailResult result = guardrailsService.inspect(
                 "Which city has the most customers?",

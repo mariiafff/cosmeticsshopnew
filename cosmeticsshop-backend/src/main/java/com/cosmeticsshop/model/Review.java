@@ -19,16 +19,22 @@ public class Review {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "star_rating")
     private int rating;
 
-    @Column(length = 1000)
+    @Column(name = "review_text", length = 1000)
     private String comment;
 
-    @Column(length = 160)
+    @Transient
     private String title;
 
     private Integer helpfulVotes = 0;
     private Integer totalVotes = 0;
+
+    @Transient
+    private String sellerResponse;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Review() {}
@@ -65,4 +71,7 @@ public class Review {
     public void setTotalVotes(Integer totalVotes) { this.totalVotes = totalVotes; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+
+    public String getSellerResponse() { return sellerResponse; }
+    public void setSellerResponse(String sellerResponse) { this.sellerResponse = sellerResponse; }
 }

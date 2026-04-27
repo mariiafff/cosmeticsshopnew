@@ -1,13 +1,14 @@
+import { inject } from '@angular/core';
 import { HttpInterceptorFn } from '@angular/common/http';
-
-const TOKEN_KEY = 'auth_token';
+import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.url.includes('/auth/login') || req.url.includes('/auth/register')) {
     return next(req);
   }
 
-  const token = localStorage.getItem(TOKEN_KEY);
+  const authService = inject(AuthService);
+  const token = authService.getToken();
 
   if (!token) {
     return next(req);

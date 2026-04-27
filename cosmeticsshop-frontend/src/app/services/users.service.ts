@@ -15,6 +15,14 @@ export interface User {
   membershipType?: string;
 }
 
+export interface UsersPage {
+  content: User[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -22,8 +30,8 @@ export class UsersService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiBaseUrl}/users`;
 
-  getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.apiUrl);
+  getUsers(page = 0, size = 20): Observable<UsersPage> {
+    return this.http.get<UsersPage>(`${this.apiUrl}?page=${page}&size=${size}`);
   }
 
   deleteUser(id: number): Observable<void> {

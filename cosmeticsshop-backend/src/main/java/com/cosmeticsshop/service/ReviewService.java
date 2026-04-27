@@ -7,7 +7,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
 @Service
+@Transactional(readOnly = true)
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
@@ -29,10 +35,12 @@ public class ReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found: " + id));
     }
 
+    @Transactional
     public Review saveReview(Review review) {
         return reviewRepository.save(review);
     }
 
+    @Transactional
     public Review updateReview(Long id, Review review) {
         Review existingReview = getReviewById(id);
 
@@ -47,6 +55,14 @@ public class ReviewService {
         return reviewRepository.save(existingReview);
     }
 
+    @Transactional
+    public Review respondToReview(Long id, String response) {
+        Review review = getReviewById(id);
+        review.setSellerResponse(response);
+        return reviewRepository.save(review);
+    }
+
+    @Transactional
     public void deleteReview(Long id) {
         reviewRepository.deleteById(id);
     }

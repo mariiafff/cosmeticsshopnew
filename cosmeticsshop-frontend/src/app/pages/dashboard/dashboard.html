@@ -10,7 +10,7 @@
 
     <nav class="dashboard-page__actions" aria-label="Primary navigation">
       <a routerLink="/products" *ngIf="role() !== 'Guest'">Shop Products</a>
-      <a routerLink="/orders" *ngIf="role() !== 'Guest'">My Orders</a>
+      <a routerLink="/orders" *ngIf="role() === 'INDIVIDUAL'">My Orders</a>
       <a routerLink="/manage/products" *ngIf="role() === 'CORPORATE' || role() === 'ADMIN'">Manage Products</a>
       <a routerLink="/manage/orders" *ngIf="role() === 'CORPORATE' || role() === 'ADMIN'">Manage Orders</a>
       <a routerLink="/admin/users" *ngIf="role() === 'ADMIN'">Admin Users</a>

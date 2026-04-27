@@ -10,13 +10,26 @@
 
     <div class="app-account">
       @if (isLoggedIn()) {
-        <a class="app-cart" routerLink="/checkout" aria-label="Cart">
-          Cart
-          <span>{{ cartCount() }}</span>
-        </a>
-        <a routerLink="/orders" routerLinkActive="is-active">Orders</a>
-        <span>Hello, {{ displayName() }}!</span>
-        <button type="button" (click)="logout()">Logout</button>
+        @if (role() === 'INDIVIDUAL') {
+          <a class="app-cart" routerLink="/checkout" aria-label="Cart">
+            Cart
+            <span>{{ cartCount() }}</span>
+          </a>
+          <a routerLink="/orders" routerLinkActive="is-active">Orders</a>
+        }
+
+        @if (role() === 'CORPORATE' || role() === 'ADMIN') {
+          <a routerLink="/manage/products" routerLinkActive="is-active">Manage Products</a>
+          <a routerLink="/manage/orders" routerLinkActive="is-active">Manage Orders</a>
+        }
+
+        @if (role() === 'ADMIN') {
+          <a routerLink="/admin/users" routerLinkActive="is-active">Users</a>
+          <a routerLink="/admin/stores" routerLinkActive="is-active">Stores</a>
+        }
+
+        <span class="app-account__greeting">Hello, {{ displayName() }}!</span>
+        <button type="button" class="app-logout" (click)="logout()">Logout</button>
       } @else {
         <a routerLink="/login">Login</a>
         <a routerLink="/register">Register</a>

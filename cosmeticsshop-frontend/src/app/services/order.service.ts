@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -51,8 +51,9 @@ export class OrderService {
     return this.http.get<Order[]>(`${this.apiUrl}/my`);
   }
 
-  getAllOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(this.apiUrl);
+  getAllOrders(size = 100): Observable<Order[]> {
+    const params = new HttpParams().set('size', size);
+    return this.http.get<Order[]>(this.apiUrl, { params });
   }
 
   createOrder(payload: CreateOrderRequest): Observable<Order> {

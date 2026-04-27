@@ -2,6 +2,8 @@ package com.cosmeticsshop.repository;
 
 import com.cosmeticsshop.model.Order;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -16,6 +18,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUser_Id(Long userId);
 
     List<Order> findByStore_Id(Long storeId);
+
+    List<Order> findByStore_IdIn(List<Long> storeIds, Pageable pageable);
+
+    Optional<Order> findByOrderNumber(String orderNumber);
 
     @Query("""
             select new map(function('formatdatetime', o.createdAt, 'yyyy-MM') as period, coalesce(sum(o.totalPrice), 0) as revenue)

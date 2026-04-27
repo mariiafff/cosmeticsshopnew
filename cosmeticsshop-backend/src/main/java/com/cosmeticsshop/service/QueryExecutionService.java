@@ -18,4 +18,8 @@ public class QueryExecutionService {
     public List<Map<String, Object>> executeQuery(String sql) {
         return jdbcTemplate.queryForList(sql);
     }
+
+    public List<Map<String, Object>> executeQuery(String sql, Object... args) {
+        return jdbcTemplate.queryForList(sql, args);
+    }
 }

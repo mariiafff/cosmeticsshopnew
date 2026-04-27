@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,6 +21,7 @@ import java.util.Locale;
 import java.util.Set;
 
 @Service
+@Transactional(readOnly = true)
 public class ProductService {
 
     private static final Logger log = LoggerFactory.getLogger(ProductService.class);
@@ -131,6 +133,7 @@ public class ProductService {
         return getProductsPage(0, size, null, "name,asc").getContent();
     }
 
+    @Transactional
     public Product saveProduct(Product product) {
         prepareNewProduct(product);
         try {
@@ -140,19 +143,23 @@ public class ProductService {
         }
     }
 
+    @Transactional
     public Product saveProductForStore(Product product, Store store) {
         product.setStore(store);
         return saveProduct(product);
     }
 
+    @Transactional
     public ProductResponseDto saveProductResponse(Product product) {
         return toProductResponseDto(saveProduct(product));
     }
 
+    @Transactional
     public ProductResponseDto saveProductResponseForStore(Product product, Store store) {
         return toProductResponseDto(saveProductForStore(product, store));
     }
 
+    @Transactional
     public Product updateProduct(Long id, Product product) {
         Product existingProduct = getProductById(id);
 
@@ -182,6 +189,7 @@ public class ProductService {
         }
     }
 
+    @Transactional
     public Product updateProductForStores(Long id, Product product, List<Long> allowedStoreIds, Store forcedStore) {
         Product existingProduct = getProductById(id);
         validateStoreAccess(existingProduct, allowedStoreIds);
@@ -212,10 +220,12 @@ public class ProductService {
         }
     }
 
+    @Transactional
     public ProductResponseDto updateProductResponse(Long id, Product product) {
         return toProductResponseDto(updateProduct(id, product));
     }
 
+    @Transactional
     public ProductResponseDto updateProductResponseForStores(Long id, Product product, List<Long> allowedStoreIds, Store forcedStore) {
         return toProductResponseDto(updateProductForStores(id, product, allowedStoreIds, forcedStore));
     }
@@ -224,12 +234,14 @@ public class ProductService {
         return productRepository.countByStockQuantityLessThanEqual(5);
     }
 
+    @Transactional
     public Product deactivateProduct(Long id) {
         Product existingProduct = getProductById(id);
         existingProduct.setStatus("INACTIVE");
         return productRepository.save(existingProduct);
     }
 
+    @Transactional
     public Product deactivateProductForStores(Long id, List<Long> allowedStoreIds) {
         Product existingProduct = getProductById(id);
         validateStoreAccess(existingProduct, allowedStoreIds);
@@ -237,12 +249,14 @@ public class ProductService {
         return productRepository.save(existingProduct);
     }
 
+    @Transactional
     public Product activateProduct(Long id) {
         Product existingProduct = getProductById(id);
         existingProduct.setStatus("ACTIVE");
         return productRepository.save(existingProduct);
     }
 
+    @Transactional
     public Product activateProductForStores(Long id, List<Long> allowedStoreIds) {
         Product existingProduct = getProductById(id);
         validateStoreAccess(existingProduct, allowedStoreIds);
@@ -250,18 +264,22 @@ public class ProductService {
         return productRepository.save(existingProduct);
     }
 
+    @Transactional
     public ProductResponseDto deactivateProductResponse(Long id) {
         return toProductResponseDto(deactivateProduct(id));
     }
 
+    @Transactional
     public ProductResponseDto deactivateProductResponseForStores(Long id, List<Long> allowedStoreIds) {
         return toProductResponseDto(deactivateProductForStores(id, allowedStoreIds));
     }
 
+    @Transactional
     public ProductResponseDto activateProductResponse(Long id) {
         return toProductResponseDto(activateProduct(id));
     }
 
+    @Transactional
     public ProductResponseDto activateProductResponseForStores(Long id, List<Long> allowedStoreIds) {
         return toProductResponseDto(activateProductForStores(id, allowedStoreIds));
     }

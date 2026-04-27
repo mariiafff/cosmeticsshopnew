@@ -14,6 +14,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             from OrderItem oi
             join fetch oi.order
             join fetch oi.product
+            left join fetch oi.product.category
             where oi.order.id in :orderIds
             """)
     List<OrderItem> findWithProductByOrderIdIn(List<Long> orderIds);

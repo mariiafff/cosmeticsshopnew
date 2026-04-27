@@ -106,15 +106,12 @@
             </div>
           </div>
 
-          <div class="chat-item__sql">
+          <div class="chat-item__sql" *ngIf="response.generatedSql">
             <span>Generated SQL</span>
-            <code *ngIf="response.generatedSql; else noSql">{{ response.generatedSql }}</code>
-            <ng-template #noSql>
-              <p class="chat-sql-empty">SQL üretilmedi</p>
-            </ng-template>
+            <code>{{ response.generatedSql }}</code>
           </div>
 
-          <p class="chat-footnote">
+          <p class="chat-footnote" *ngIf="response.status === 'SUCCESS' && response.rows.length > 0">
             {{ response.rows.length }} satır döndü · {{ response.executionTimeMs || 0 }} ms
           </p>
         </article>

@@ -59,14 +59,13 @@
       }
 
       @if (hasCartItems()) {
-        <label class="checkout-form__field">
-          <span>Payment</span>
-          <select [(ngModel)]="paymentMethod" name="paymentMethod">
-            <option value="CARD">Card</option>
-            <option value="CASH_ON_DELIVERY">Cash on delivery</option>
-            <option value="BANK_TRANSFER">Bank transfer</option>
-          </select>
-        </label>
+        <div class="checkout-form__field">
+          <span>Payment Method</span>
+          <div class="checkout-method-static">
+            <strong>Card</strong>
+            <small>Secure payment via Stripe</small>
+          </div>
+        </div>
 
         <button type="submit" [disabled]="isSubmitting() || checkoutForm.invalid">
           Pay with Stripe

@@ -49,7 +49,7 @@ public class SqlWhitelist {
                 "id", "sku", "stock_code", "name", "unit_price", "category_id", "store_id"
         ));
         objects.put("ai_safe.orders", Set.of(
-                "id", "invoice_no", "order_date", "status", "grand_total", "normalized_grand_total_usd"
+                "id", "invoice_no", "order_date", "status", "grand_total", "normalized_grand_total_usd", "store_id"
         ));
         objects.put("ai_safe.order_items", Set.of(
                 "id", "order_id", "product_id", "quantity", "unit_price"
@@ -60,9 +60,6 @@ public class SqlWhitelist {
         ));
         objects.put("ai_safe.customer_segments", Set.of(
                 "user_id", "value_segment", "membership_type", "satisfaction_level"
-        ));
-        objects.put("ai_safe.product_sales_summary", Set.of(
-                "product_id", "product_name", "total_units_sold", "total_revenue"
         ));
         objects.put("ai_safe.city_customer_summary", Set.of(
                 "city", "total_customers", "avg_spend"
@@ -75,6 +72,12 @@ public class SqlWhitelist {
         ));
         objects.put("ai_safe.segment_summary", Set.of(
                 "value_segment", "membership_type", "total_customers"
+        ));
+        objects.put("ai_safe.reviews", Set.of(
+                "id", "product_id", "user_id", "rating", "comment", "title", "seller_response", "created_at"
+        ));
+        objects.put("ai_safe.stores", Set.of(
+                "id", "name", "status", "owner_id"
         ));
         return Map.copyOf(objects);
     }

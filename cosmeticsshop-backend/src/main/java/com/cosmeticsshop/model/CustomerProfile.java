@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 @Table(
         name = "customer_profiles",
         indexes = {
-                @Index(name = "idx_customer_profile_user", columnList = "userId", unique = true),
+                @Index(name = "idx_customer_profile_user", columnList = "user_id", unique = true),
                 @Index(name = "idx_customer_profile_membership", columnList = "membershipType")
         }
 )

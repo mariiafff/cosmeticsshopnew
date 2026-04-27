@@ -162,7 +162,8 @@ h1 {
 }
 
 .checkout-form__field input,
-.checkout-form__field select {
+.checkout-form__field select,
+.checkout-method-static {
   width: 100%;
   min-height: 46px;
   padding: 0 1rem;
@@ -170,6 +171,20 @@ h1 {
   border-radius: 0;
   background: #fffdf9;
   font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.checkout-method-static strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+
+.checkout-method-static small {
+  color: #6d665d;
+  font-size: 0.75rem;
 }
 
 .checkout-item__actions {

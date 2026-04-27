@@ -103,7 +103,7 @@
               <span [class.product-card__stock--low]="(product.stockQuantity ?? 0) > 0 && (product.stockQuantity ?? 0) <= 5">
                 {{ productStockLabel(product) }}
               </span>
-              <button type="button" (click)="addToCart(product)">Buy</button>
+              <button *ngIf="canBuy()" type="button" (click)="addToCart(product)">Buy</button>
             </div>
           </li>
         </ul>

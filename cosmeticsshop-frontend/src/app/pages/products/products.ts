@@ -71,6 +71,9 @@ export class ProductsPage implements OnInit {
   protected readonly canLoadMore = computed(() => {
     return !this.isLoading() && !this.isLoadingMore() && this.currentPage() + 1 < this.totalPages();
   });
+  protected readonly canBuy = computed(() => {
+    return this.role().toUpperCase() === 'INDIVIDUAL';
+  });
   protected readonly loadedCount = computed(() => this.products().length);
 
   ngOnInit(): void {

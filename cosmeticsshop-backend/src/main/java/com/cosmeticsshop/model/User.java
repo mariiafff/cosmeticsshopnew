@@ -1,5 +1,6 @@
 package com.cosmeticsshop.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -38,6 +39,7 @@ public class User {
     private String email;
 
     @Column(name = "password_hash", nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column(name = "role_type", nullable = false, length = 30)
@@ -50,6 +52,7 @@ public class User {
     private Long storeId;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonIgnore
     private CustomerProfile customerProfile;
 
     @Column(length = 100)

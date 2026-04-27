@@ -13,6 +13,8 @@ import com.cosmeticsshop.model.User;
 import com.cosmeticsshop.repository.OrderItemRepository;
 import com.cosmeticsshop.repository.OrderRepository;
 import com.cosmeticsshop.repository.ProductRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -50,11 +53,16 @@ public class OrderService {
         return toOrderResponses(orderRepository.findAll());
     }
 
+    public List<OrderResponse> getRecentOrderResponses(int size) {
+        return toOrderResponses(orderRepository.findAll(recentOrdersPage(size)).getContent());
+    }
+
     public Order getOrderById(Long id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + id));
     }
 
+    @Transactional
     public Order saveOrder(Order order) {
         return orderRepository.save(order);
     }
@@ -73,6 +81,7 @@ public class OrderService {
         return toOrderResponse(createOrder(user, request, "PAID"));
     }
 
+    @Transactional
     public Order updateOrder(Long id, Order order) {
         Order existingOrder = getOrderById(id);
 
@@ -105,6 +114,7 @@ public class OrderService {
         return orderRepository.save(existingOrder);
     }
 
+    @Transactional
     public Order updateOrderForStores(Long id, Order order, List<Long> allowedStoreIds) {
         Order existingOrder = getOrderById(id);
         validateStoreAccess(existingOrder, allowedStoreIds);
@@ -126,10 +136,12 @@ public class OrderService {
         return orderRepository.save(existingOrder);
     }
 
+    @Transactional
     public void deleteOrder(Long id) {
         orderRepository.deleteById(id);
     }
 
+    @Transactional
     public void deleteOrderForStores(Long id, List<Long> allowedStoreIds) {
         Order existingOrder = getOrderById(id);
         validateStoreAccess(existingOrder, allowedStoreIds);
@@ -153,10 +165,16 @@ public class OrderService {
             return Collections.emptyList();
         }
 
-        List<Order> orders = storeIds.stream()
-                .distinct()
-                .flatMap(storeId -> orderRepository.findByStore_Id(storeId).stream())
-                .toList();
+        List<Order> orders = orderRepository.findByStore_IdIn(storeIds.stream().distinct().toList(), recentOrdersPage(100));
+        return toOrderResponses(orders);
+    }
+
+    public List<OrderResponse> getOrderResponsesByStoreIds(List<Long> storeIds, int size) {
+        if (storeIds == null || storeIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Order> orders = orderRepository.findByStore_IdIn(storeIds.stream().distinct().toList(), recentOrdersPage(size));
         return toOrderResponses(orders);
     }
 
@@ -312,5 +330,10 @@ public class OrderService {
         return orders.stream()
                 .map(order -> new OrderResponse(order, itemsByOrderId.getOrDefault(order.getId(), Collections.emptyList())))
                 .toList();
+    }
+
+    private PageRequest recentOrdersPage(int size) {
+        int normalizedSize = Math.min(Math.max(size, 1), 250);
+        return PageRequest.of(0, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id")));
     }
 }

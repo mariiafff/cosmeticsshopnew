@@ -8,10 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByStore_Id(Long storeId);
+
+    Optional<Product> findBySku(String sku);
 
     Page<Product> findByStore_IdIn(List<Long> storeIds, Pageable pageable);
 
