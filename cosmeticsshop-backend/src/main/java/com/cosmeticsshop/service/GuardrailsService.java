@@ -283,6 +283,13 @@ public class GuardrailsService {
                 || normalized.contains("my purchases")
                 || normalized.contains("my reviews")
                 || normalized.contains("my spending")
+                || normalized.contains("benim")
+                || normalized.contains("aldığım")
+                || normalized.contains("aldigim")
+                || normalized.contains("yaptığım alışveriş")
+                || normalized.contains("yaptigim alisveris")
+                || normalized.contains("son alışveriş")
+                || normalized.contains("son alisveris")
                 || normalized.contains("my store")
                 || normalized.contains("own store")
                 || normalized.contains("customer details")
@@ -301,8 +308,23 @@ public class GuardrailsService {
         }
 
         // Allow CORPORATE to ask about their own store
-        if ("CORPORATE".equals(session.role()) && (normalized.contains("my store") || normalized.contains("own store"))) {
+        if ("CORPORATE".equals(session.role()) && isOwnStoreQuestion(normalized)) {
             return GuardrailResult.allow();
+        }
+
+        if ("INDIVIDUAL".equals(session.role()) && isOwnUserQuestion(normalized)) {
+            return GuardrailResult.allow();
+        }
+
+        if (!"CORPORATE".equals(session.role()) && !"ADMIN".equals(session.role()) && isSellerAnalyticsQuestion(normalized)) {
+            return GuardrailResult.block(
+                    "Seller Analytics Scope Blocked",
+                    "HIGH",
+                    "Seller/store analytics are only available to authenticated corporate seller accounts.",
+                    "Role scope restriction",
+                    "SQL üretimi durduruldu",
+                    "Kendi siparişleriniz, harcamalarınız veya güvenli genel özet analitikleri sorabilirsiniz."
+            );
         }
 
         if (("INDIVIDUAL".equals(session.role()) || "CORPORATE".equals(session.role())) && asksForScopedData) {
@@ -317,6 +339,43 @@ public class GuardrailsService {
         }
 
         return GuardrailResult.allow();
+    }
+
+    private boolean isOwnStoreQuestion(String normalized) {
+        return normalized.contains("my store")
+                || normalized.contains("own store")
+                || normalized.contains("magazam")
+                || normalized.contains("mağazam")
+                || normalized.contains("magaza")
+                || normalized.contains("mağaza");
+    }
+
+    private boolean isSellerAnalyticsQuestion(String normalized) {
+        return normalized.contains("seller")
+                || normalized.contains("store analytics")
+                || normalized.contains("my store")
+                || normalized.contains("own store")
+                || normalized.contains("magazam")
+                || normalized.contains("mağazam")
+                || normalized.contains("magazadan")
+                || normalized.contains("mağazadan")
+                || normalized.contains("magazamdan")
+                || normalized.contains("mağazamdan");
+    }
+
+    private boolean isOwnUserQuestion(String normalized) {
+        return normalized.contains("my orders")
+                || normalized.contains("my purchases")
+                || normalized.contains("my spending")
+                || normalized.contains("benim")
+                || normalized.contains("aldığım")
+                || normalized.contains("aldigim")
+                || normalized.contains("yaptığım alışveriş")
+                || normalized.contains("yaptigim alisveris")
+                || normalized.contains("son alışveriş")
+                || normalized.contains("son alisveris")
+                || normalized.contains("siparişim")
+                || normalized.contains("siparisim");
     }
 
     private GuardrailResult checkEnumeration(String normalized) {

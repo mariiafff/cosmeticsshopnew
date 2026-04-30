@@ -62,7 +62,7 @@ public class SqlWhitelist {
                 "user_id", "value_segment", "membership_type", "satisfaction_level"
         ));
         objects.put("ai_safe.city_customer_summary", Set.of(
-                "city", "total_customers", "avg_spend"
+                "city", "total_customers", "customer_count", "avg_spend"
         ));
         objects.put("ai_safe.country_revenue_summary", Set.of(
                 "country", "total_revenue", "total_orders"
@@ -72,6 +72,28 @@ public class SqlWhitelist {
         ));
         objects.put("ai_safe.segment_summary", Set.of(
                 "value_segment", "membership_type", "total_customers"
+        ));
+        objects.put("ai_safe.seller_product_sales_summary", Set.of(
+                "store_id", "seller_user_id", "product_id", "product_name", "total_quantity", "total_revenue", "last_order_date"
+        ));
+        objects.put("ai_safe.seller_recent_sold_products", Set.of(
+                "store_id", "seller_user_id", "product_id", "product_name", "order_id", "order_date", "quantity", "unit_price"
+        ));
+        objects.put("ai_safe.seller_customer_summary", Set.of(
+                "store_id", "seller_user_id", "total_customers", "total_orders"
+        ));
+        objects.put("ai_safe.seller_revenue_summary", Set.of(
+                "store_id", "seller_user_id", "total_revenue", "total_orders", "total_items_sold"
+        ));
+        objects.put("ai_safe.user_recent_orders", Set.of(
+                "order_id", "customer_id", "order_date", "total_amount"
+        ));
+        objects.put("ai_safe.user_order_items", Set.of(
+                "order_id", "product_name", "quantity", "unit_price", "line_total"
+        ));
+        objects.put("ai_safe.user_order_summary", Set.of(
+                "customer_id", "total_orders", "avg_order_value", "total_spent",
+                "last_order_amount", "percentage_of_total_spent"
         ));
         objects.put("ai_safe.reviews", Set.of(
                 "id", "product_id", "user_id", "rating", "comment", "title", "seller_response", "created_at"

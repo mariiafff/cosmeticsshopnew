@@ -27,9 +27,12 @@ public class ChatAnalysisService {
                     + formatNumber(firstRow.get("avg_spend")) + ".";
         }
 
-        if (normalized.contains("city") && firstRow.containsKey("city") && firstRow.containsKey("total_customers")) {
+        if (normalized.contains("city") && firstRow.containsKey("city") && (firstRow.containsKey("total_customers") || firstRow.containsKey("customer_count"))) {
+            Object customerCount = firstRow.containsKey("customer_count")
+                    ? firstRow.get("customer_count")
+                    : firstRow.get("total_customers");
             return firstRow.get("city") + " has the highest customer count with "
-                    + formatNumber(firstRow.get("total_customers")) + " customers.";
+                    + formatNumber(customerCount) + " customers.";
         }
 
         if (normalized.contains("country") && firstRow.containsKey("country") && firstRow.containsKey("total_revenue")) {
@@ -37,8 +40,44 @@ public class ChatAnalysisService {
                     + formatNumber(firstRow.get("total_revenue")) + ".";
         }
 
+        if (isUserScopedQuestion(normalized) && firstRow.containsKey("percentage_of_total_spent")) {
+            return "Your last order was "
+                    + formatNumber(firstRow.get("percentage_of_total_spent"))
+                    + "% of your total spending.";
+        }
+
+        if (isUserScopedQuestion(normalized) && firstRow.containsKey("product_name")) {
+            return buildLatestOrderItemsAnswer(firstRow, rows);
+        }
+
+        if (isUserScopedQuestion(normalized) && firstRow.containsKey("total_spent")) {
+            return "Your total spending is "
+                    + formatNumber(firstRow.get("total_spent"))
+                    + ".";
+        }
+
+        if (isUserScopedQuestion(normalized) && firstRow.containsKey("total_amount")) {
+            return "Your latest order total is "
+                    + formatNumber(firstRow.get("total_amount"))
+                    + ".";
+        }
+
         if (normalized.contains("product") && firstRow.containsKey("product_name")) {
             return "Here are the products that best match your analytics request.";
+        }
+
+        if ((normalized.contains("mağaza") || normalized.contains("magaza") || normalized.contains("store"))
+                && (normalized.contains("ürün") || normalized.contains("urun") || normalized.contains("product"))
+                && firstRow.containsKey("product_name")) {
+            return "Mağazanızdan alışveriş yapılan en son ürün: "
+                    + firstRow.get("product_name")
+                    + ".";
+        }
+
+        if ((normalized.contains("gelir") || normalized.contains("revenue")) && firstRow.containsKey("total_revenue")) {
+            return "Mağazanızın toplam geliri: "
+                    + formatNumber(firstRow.get("total_revenue"))
+                    + ".";
         }
 
         return "I found " + rows.size() + " rows based on your question.";
@@ -124,6 +163,48 @@ public class ChatAnalysisService {
             return DECIMAL_FORMAT.format(number.doubleValue());
         }
         return String.valueOf(value);
+    }
+
+    private String buildLatestOrderItemsAnswer(Map<String, Object> firstRow, List<Map<String, Object>> rows) {
+        StringBuilder answer = new StringBuilder();
+        if (firstRow.containsKey("total_amount")) {
+            answer.append("Your latest order total is ")
+                    .append(formatNumber(firstRow.get("total_amount")))
+                    .append(". It includes:");
+        } else {
+            answer.append("Your latest order includes:");
+        }
+
+        for (Map<String, Object> row : rows) {
+            answer.append("\n- ")
+                    .append(row.get("product_name"));
+            if (row.containsKey("quantity")) {
+                answer.append(" x").append(formatNumber(row.get("quantity")));
+            }
+            if (row.containsKey("line_total")) {
+                answer.append(" = ").append(formatNumber(row.get("line_total")));
+            } else if (row.containsKey("unit_price")) {
+                answer.append(" @ ").append(formatNumber(row.get("unit_price")));
+            }
+        }
+
+        return answer.toString();
+    }
+
+    private boolean isUserScopedQuestion(String normalized) {
+        if (normalized.contains("mağaza") || normalized.contains("magaza") || normalized.contains("store")) {
+            return false;
+        }
+        return normalized.contains("benim")
+                || normalized.contains("aldığım")
+                || normalized.contains("aldigim")
+                || normalized.contains("alışveriş")
+                || normalized.contains("alisveris")
+                || normalized.contains("sipariş")
+                || normalized.contains("siparis")
+                || normalized.contains("my order")
+                || normalized.contains("my purchase")
+                || normalized.contains("my spending");
     }
 
     public record VisualizationPayload(String visualizationType, Map<String, Object> chartData) {

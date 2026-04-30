@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 public class AdminInitializer {
 
     @Bean
+    @org.springframework.core.annotation.Order(10)
     @ConditionalOnProperty(name = "app.admin.seed.enabled", havingValue = "true", matchIfMissing = true)
     public CommandLineRunner createDefaultAdmin(
             UserRepository userRepository,
@@ -62,27 +63,26 @@ public class AdminInitializer {
             });
 
             if (storeRepository.count() > 0 || productRepository.count() > 0) {
-                Long storeId = storeRepository.findAll().stream()
+                Store demoStore = storeRepository.findAll().stream()
+                        .filter(store -> "Luna Marketplace".equalsIgnoreCase(store.getName())
+                                || "Luna Beauty".equalsIgnoreCase(store.getName()))
                         .findFirst()
-                        .map(Store::getId)
                         .orElse(null);
+                Long storeId = demoStore == null ? null : demoStore.getId();
 
-                userRepository.findByEmail("manager@luna-beauty.com").ifPresentOrElse(corporate -> {
-                    corporate.setPassword(passwordEncoder.encode("Manager123!"));
-                    corporate.setRole("CORPORATE");
-                    corporate.setStoreId(storeId);
-                    userRepository.save(corporate);
-                }, () -> {
-                    User corporate = new User();
-                    corporate.setEmail("manager@luna-beauty.com");
-                    corporate.setPassword(passwordEncoder.encode("Manager123!"));
-                    corporate.setRole("CORPORATE");
-                    corporate.setFirstName("Luna");
-                    corporate.setLastName("Manager");
-                    corporate.setStoreId(storeId);
-                    corporate.setCity("Istanbul");
-                    userRepository.save(corporate);
-                });
+                User corporate = userRepository.findByEmail("seller@test.com").orElseGet(User::new);
+                corporate.setEmail("seller@test.com");
+                corporate.setPassword(passwordEncoder.encode("Seller123!"));
+                corporate.setRole("CORPORATE");
+                corporate.setFirstName("Luna");
+                corporate.setLastName("Seller");
+                corporate.setStoreId(storeId);
+                corporate.setCity("Istanbul");
+                User savedCorporate = userRepository.save(corporate);
+                if (demoStore != null) {
+                    demoStore.setOwnerUserId(savedCorporate.getId());
+                    storeRepository.save(demoStore);
+                }
                 userRepository.findByEmail("shopper@example.com").ifPresentOrElse(shopper -> {
                     shopper.setPassword(passwordEncoder.encode("Shopper123!"));
                     shopper.setRole("INDIVIDUAL");
@@ -115,11 +115,11 @@ public class AdminInitializer {
             Store savedStore = storeRepository.save(store);
 
             User corporate = new User();
-            corporate.setEmail("manager@luna-beauty.com");
-            corporate.setPassword(passwordEncoder.encode("Manager123!"));
+            corporate.setEmail("seller@test.com");
+            corporate.setPassword(passwordEncoder.encode("Seller123!"));
             corporate.setRole("CORPORATE");
             corporate.setFirstName("Luna");
-            corporate.setLastName("Manager");
+            corporate.setLastName("Seller");
             corporate.setStoreId(savedStore.getId());
             corporate.setCity("Istanbul");
             userRepository.save(corporate);

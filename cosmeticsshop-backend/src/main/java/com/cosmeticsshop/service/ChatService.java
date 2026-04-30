@@ -3,14 +3,11 @@ package com.cosmeticsshop.service;
 import com.cosmeticsshop.dto.ChatRequest;
 import com.cosmeticsshop.dto.ChatResponse;
 import com.cosmeticsshop.dto.GuardrailResult;
-import com.cosmeticsshop.exception.GeminiUnavailableException;
 import com.cosmeticsshop.service.ChatAnalysisService.VisualizationPayload;
 import com.cosmeticsshop.service.ChatSessionService.ChatSession;
+import com.cosmeticsshop.service.chatgraph.ChatGraphOrchestrator;
 import org.springframework.dao.DataAccessException;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientResponseException;
 
 import java.text.Normalizer;
 import java.time.YearMonth;
@@ -18,13 +15,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class ChatService {
 
-    private static final int MAX_GEMINI_ATTEMPTS = 3;
-    private static final long[] RETRY_DELAYS_MS = {1000L, 2000L, 4000L};
     private static final List<String> PIPELINE_STEPS = List.of(
             "Ask question",
             "Generate SQL",
@@ -32,29 +26,23 @@ public class ChatService {
             "Run query",
             "Show results"
     );
-    private static final String CURRENT_MONTH_TOP_PRODUCTS_SQL = """
+    private static final String TOP_PRODUCTS_BY_STORE_SQL = """
             select
-                p.name as product_name,
-                sum(oi.quantity) as total_sold
-            from order_items oi
-            join products p on p.id = oi.product_id
-            join orders o on o.id = oi.order_id
-            where p.store_id = ?
-              and extract(month from o.created_at) = extract(month from current_date)
-              and extract(year from o.created_at) = extract(year from current_date)
-            group by p.id, p.name
+                product_name,
+                total_quantity as total_sold
+            from ai_safe.seller_product_sales_summary
+            where store_id = ?
+              and total_quantity > 0
             order by total_sold desc
             limit 5
             """;
-    private static final String CURRENT_MONTH_TOP_PRODUCTS_GLOBAL_SQL = """
+    private static final String TOP_PRODUCTS_GLOBAL_SQL = """
             select
                 p.name as product_name,
                 sum(oi.quantity) as total_sold
             from order_items oi
             join products p on p.id = oi.product_id
             join orders o on o.id = oi.order_id
-            where extract(month from o.created_at) = extract(month from current_date)
-              and extract(year from o.created_at) = extract(year from current_date)
             group by p.id, p.name
             order by total_sold desc
             limit 5
@@ -187,44 +175,30 @@ public class ChatService {
             limit 2
             """;
 
-    private static final Map<String, String> DEMO_FALLBACK_SQL = Map.of(
-            "which membership type spends the most?",
-            "select membership_type, avg_spend from ai_safe.membership_summary order by avg_spend desc limit 1",
-            "which city has the most customers?",
-            "select city, total_customers from ai_safe.city_customer_summary order by total_customers desc limit 1",
-            "which country generates the most revenue?",
-            "select country, total_revenue from ai_safe.country_revenue_summary order by total_revenue desc limit 1",
-            "show revenue by country",
-            "select country, total_revenue from ai_safe.country_revenue_summary order by total_revenue desc limit 5"
-    );
-
-    private final GeminiSqlService geminiSqlService;
-    private final SqlSafetyService sqlSafetyService;
     private final QueryExecutionService queryExecutionService;
-    private final Environment environment;
     private final GuardrailsService guardrailsService;
     private final ChatSessionService chatSessionService;
     private final ChatRateLimitService chatRateLimitService;
     private final ChatAnalysisService chatAnalysisService;
+    private final ChatGraphOrchestrator chatGraphOrchestrator;
+    private final PythonAiChatClient pythonAiChatClient;
 
     public ChatService(
-            GeminiSqlService geminiSqlService,
-            SqlSafetyService sqlSafetyService,
             QueryExecutionService queryExecutionService,
-            Environment environment,
             GuardrailsService guardrailsService,
             ChatSessionService chatSessionService,
             ChatRateLimitService chatRateLimitService,
-            ChatAnalysisService chatAnalysisService
+            ChatAnalysisService chatAnalysisService,
+            ChatGraphOrchestrator chatGraphOrchestrator,
+            PythonAiChatClient pythonAiChatClient
     ) {
-        this.geminiSqlService = geminiSqlService;
-        this.sqlSafetyService = sqlSafetyService;
         this.queryExecutionService = queryExecutionService;
-        this.environment = environment;
         this.guardrailsService = guardrailsService;
         this.chatSessionService = chatSessionService;
         this.chatRateLimitService = chatRateLimitService;
         this.chatAnalysisService = chatAnalysisService;
+        this.chatGraphOrchestrator = chatGraphOrchestrator;
+        this.pythonAiChatClient = pythonAiChatClient;
     }
 
     public ChatResponse ask(ChatRequest request) {
@@ -301,70 +275,8 @@ public class ChatService {
             return answerTopReviewedProducts(question, session, startTime);
         }
 
-        try {
-            SqlGenerationResult sqlGenerationResult = generateSqlWithRetry(question, session);
-            sqlSafetyService.validate(sqlGenerationResult.sql());
-
-            List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
-                    queryExecutionService.executeQuery(sqlGenerationResult.sql())
-            );
-            VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
-            long executionTimeMs = elapsedMs(startTime);
-
-            return new ChatResponse(
-                    chatAnalysisService.escapeHtml(question),
-                    chatAnalysisService.escapeHtml(sqlGenerationResult.sql()),
-                    rows,
-                    sqlGenerationResult.message(),
-                    executionTimeMs,
-                    "SUCCESS",
-                    "ANALYSIS",
-                    null,
-                    null,
-                    buildSessionDetails(session),
-                    chatAnalysisService.escapeHtml(chatAnalysisService.buildFinalAnswer(question, rows)),
-                    visualization.visualizationType(),
-                    visualization.chartData(),
-                    PIPELINE_STEPS
-            );
-        } catch (GeminiUnavailableException geminiUnavailableException) {
-            return new ChatResponse(
-                    chatAnalysisService.escapeHtml(question),
-                    null,
-                    List.of(),
-                    "Gemini is temporarily unavailable.",
-                    elapsedMs(startTime),
-                    "ERROR",
-                    "ERROR",
-                    "Upstream model unavailable",
-                    "Model geçici olarak kullanılamıyor",
-                    buildSessionDetails(session),
-                    "The assistant could not reach the SQL model right now. Please try again shortly.",
-                    "NONE",
-                    Map.of(),
-                    PIPELINE_STEPS
-            );
-        } catch (IllegalArgumentException validationException) {
-            return new ChatResponse(
-                    chatAnalysisService.escapeHtml(question),
-                    null,
-                    List.of(),
-                    "Generated SQL did not pass validation.",
-                    elapsedMs(startTime),
-                    "ERROR",
-                    "VALIDATOR",
-                    "SQL validation failure",
-                    "SQL güvenlik doğrulaması başarısız oldu",
-                    Map.of(
-                            "reason", chatAnalysisService.escapeHtml(validationException.getMessage()),
-                            "role", session.role()
-                    ),
-                    "The request was stopped because the generated SQL violated safety rules.",
-                    "NONE",
-                    Map.of(),
-                    PIPELINE_STEPS
-            );
-        }
+        return pythonAiChatClient.ask(question, session, startTime)
+                .orElseGet(() -> chatGraphOrchestrator.run(question, session, startTime));
     }
 
     private ChatResponse buildBlockedResponse(
@@ -423,89 +335,6 @@ public class ChatService {
             details.put("userId", session.userId());
         }
         return details;
-    }
-
-    private SqlGenerationResult generateSqlWithRetry(String question, ChatSession session) {
-        RuntimeException lastTransientError = null;
-
-        for (int attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
-            try {
-                return new SqlGenerationResult(
-                        geminiSqlService.generateSql(question, session.role(), session.storeId()),
-                        "Query executed successfully."
-                );
-            } catch (RuntimeException ex) {
-                if (!isRetryableGeminiError(ex)) {
-                    throw ex;
-                }
-
-                lastTransientError = ex;
-                if (attempt == MAX_GEMINI_ATTEMPTS) {
-                    break;
-                }
-
-                sleepBeforeRetry(attempt);
-            }
-        }
-
-        Optional<String> fallbackSql = buildDevelopmentFallbackSql(question, lastTransientError);
-        if (fallbackSql.isPresent()) {
-            return new SqlGenerationResult(
-                    fallbackSql.get(),
-                    "Gemini unavailable, fallback query executed."
-            );
-        }
-
-        throw new GeminiUnavailableException(
-                "Gemini is temporarily unavailable. Please try again in a moment.",
-                lastTransientError
-        );
-    }
-
-    private boolean isRetryableGeminiError(RuntimeException ex) {
-        if (ex instanceof ResourceAccessException) {
-            return true;
-        }
-
-        if (ex instanceof RestClientResponseException responseException) {
-            int statusCode = responseException.getStatusCode().value();
-            return statusCode == 429 || statusCode == 503;
-        }
-
-        Throwable cause = ex.getCause();
-        while (cause != null) {
-            if (cause instanceof java.net.SocketTimeoutException || cause instanceof java.net.http.HttpTimeoutException) {
-                return true;
-            }
-            cause = cause.getCause();
-        }
-
-        return false;
-    }
-
-    private void sleepBeforeRetry(int attempt) {
-        try {
-            Thread.sleep(RETRY_DELAYS_MS[attempt - 1]);
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
-            throw new GeminiUnavailableException(
-                    "Gemini request was interrupted. Please try again.",
-                    interruptedException
-            );
-        }
-    }
-
-    private Optional<String> buildDevelopmentFallbackSql(String question, RuntimeException lastTransientError) {
-        if (!isDevelopmentEnvironment() || lastTransientError == null) {
-            return Optional.empty();
-        }
-
-        String fallbackSql = DEMO_FALLBACK_SQL.get(normalizeQuestion(question));
-        return Optional.ofNullable(fallbackSql);
-    }
-
-    private String normalizeQuestion(String question) {
-        return question == null ? "" : question.trim().toLowerCase(Locale.ROOT);
     }
 
     private boolean isCurrentMonthTopProductsIntent(String question) {
@@ -615,7 +444,7 @@ public class ChatService {
             );
         }
 
-        String sql = isCorporate ? CURRENT_MONTH_TOP_PRODUCTS_SQL : CURRENT_MONTH_TOP_PRODUCTS_GLOBAL_SQL;
+        String sql = isCorporate ? TOP_PRODUCTS_BY_STORE_SQL : TOP_PRODUCTS_GLOBAL_SQL;
         List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
                 isCorporate
                         ? queryExecutionService.executeQuery(sql, session.storeId())
@@ -643,12 +472,11 @@ public class ChatService {
 
     private String buildTopProductsAnswer(List<Map<String, Object>> rows, boolean scopedToStore) {
         if (rows == null || rows.isEmpty()) {
-            return "Bu ay için satış verisi bulunamadı.";
+            return "Satış verisi bulunamadı.";
         }
 
         StringBuilder answer = new StringBuilder();
-        answer.append(turkishCurrentMonthLabel())
-                .append(scopedToStore ? " için mağazanızın en çok satan 5 ürünü:" : " için en çok satan 5 ürün:");
+        answer.append(scopedToStore ? "Mağazanızın en çok satan 5 ürünü:" : "En çok satan 5 ürün:");
 
         for (int index = 0; index < rows.size(); index++) {
             Map<String, Object> row = rows.get(index);
@@ -1153,21 +981,6 @@ public class ChatService {
         return normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
     }
 
-    private boolean isDevelopmentEnvironment() {
-        String[] activeProfiles = environment.getActiveProfiles();
-        if (activeProfiles.length == 0) {
-            return true;
-        }
-
-        for (String profile : activeProfiles) {
-            if ("dev".equalsIgnoreCase(profile) || "development".equalsIgnoreCase(profile) || "local".equalsIgnoreCase(profile)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private String rateLimitKey(ChatSession session) {
         if (session.email() != null) {
             return session.email();
@@ -1179,6 +992,4 @@ public class ChatService {
         return (System.nanoTime() - startTime) / 1_000_000;
     }
 
-    private record SqlGenerationResult(String sql, String message) {
-    }
 }

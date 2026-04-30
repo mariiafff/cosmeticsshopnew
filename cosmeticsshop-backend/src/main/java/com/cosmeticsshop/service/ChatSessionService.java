@@ -41,7 +41,15 @@ public class ChatSessionService {
         if ("CORPORATE".equalsIgnoreCase(user.getRole())) {
             List<Store> stores = storeRepository.findByOwnerUserId(user.getId());
             if (!stores.isEmpty()) {
-                storeId = stores.get(0).getId();
+                storeId = stores.stream()
+                        .filter(store -> "OPEN".equalsIgnoreCase(store.getStatus()))
+                        .filter(store -> "Luna Marketplace".equalsIgnoreCase(store.getName()))
+                        .findFirst()
+                        .or(() -> stores.stream()
+                                .filter(store -> "OPEN".equalsIgnoreCase(store.getStatus()))
+                                .findFirst())
+                        .orElse(stores.get(0))
+                        .getId();
             }
         }
 
