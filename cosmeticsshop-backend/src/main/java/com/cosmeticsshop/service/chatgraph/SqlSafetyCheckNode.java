@@ -74,6 +74,7 @@ public class SqlSafetyCheckNode implements ChatGraphNode {
             }
         }
         if (sql.contains("ai_safe.user_")
+                && !sql.contains("ai_safe.user_order_items") // Allow category analysis for sellers
                 && !"INDIVIDUAL".equals(state.getSession().role())
                 && !"ADMIN".equals(state.getSession().role())) {
             return "User analytics queries are only available to individual users or admins.";

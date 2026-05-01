@@ -6,6 +6,8 @@ import com.cosmeticsshop.dto.GuardrailResult;
 import com.cosmeticsshop.service.ChatAnalysisService.VisualizationPayload;
 import com.cosmeticsshop.service.ChatSessionService.ChatSession;
 import com.cosmeticsshop.service.chatgraph.ChatGraphOrchestrator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -15,9 +17,45 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class ChatService {
+
+    private static final Logger log = LoggerFactory.getLogger(ChatService.class);
+    private static final int DEFAULT_REVIEWED_PRODUCTS_LIMIT = 5;
+    private static final int MAX_REQUESTED_LIMIT = 100;
+    private static final List<Pattern> REQUESTED_LIMIT_PATTERNS = List.of(
+            Pattern.compile("\\btop\\s+(\\d{1,3})\\b"),
+            Pattern.compile("\\bfirst\\s+(\\d{1,3})\\b"),
+            Pattern.compile("\\bbest\\s+(\\d{1,3})\\b"),
+            Pattern.compile("\\bshow\\s+(?:me\\s+)?(\\d{1,3})\\b"),
+            Pattern.compile("\\blist\\s+(?:the\\s+)?(\\d{1,3})\\b"),
+            Pattern.compile("\\b(\\d{1,3})\\s+(?:urun|urunu|urunler|urunleri|products?|items?)\\b")
+    );
+    private static final Map<String, Integer> NUMBER_WORDS = Map.ofEntries(
+            Map.entry("bir", 1),
+            Map.entry("one", 1),
+            Map.entry("iki", 2),
+            Map.entry("two", 2),
+            Map.entry("uc", 3),
+            Map.entry("three", 3),
+            Map.entry("dort", 4),
+            Map.entry("four", 4),
+            Map.entry("bes", 5),
+            Map.entry("five", 5),
+            Map.entry("alti", 6),
+            Map.entry("six", 6),
+            Map.entry("yedi", 7),
+            Map.entry("seven", 7),
+            Map.entry("sekiz", 8),
+            Map.entry("eight", 8),
+            Map.entry("dokuz", 9),
+            Map.entry("nine", 9),
+            Map.entry("on", 10),
+            Map.entry("ten", 10)
+    );
 
     private static final List<String> PIPELINE_STEPS = List.of(
             "Ask question",
@@ -134,7 +172,7 @@ public class ChatService {
             group by p.id, p.name
             having count(r.id) > 0
             order by average_rating desc, review_count desc
-            limit 3
+            limit ?
             """;
     private static final String TOP_REVIEWED_PRODUCTS_BY_STORE_SQL = """
             select
@@ -147,7 +185,7 @@ public class ChatService {
             group by p.id, p.name
             having count(r.id) > 0
             order by average_rating desc, review_count desc
-            limit 3
+            limit ?
             """;
     private static final String LOWEST_RATED_PRODUCTS_SQL = """
             select
@@ -800,15 +838,31 @@ public class ChatService {
             );
         }
 
+        int requestedLimit = extractRequestedLimit(question, DEFAULT_REVIEWED_PRODUCTS_LIMIT);
         String sql = isCorporate ? TOP_REVIEWED_PRODUCTS_BY_STORE_SQL : TOP_REVIEWED_PRODUCTS_SQL;
+        String displaySql = buildReviewedProductsDisplaySql(sql, isCorporate ? session.storeId() : null, requestedLimit);
         List<Map<String, Object>> rows;
         try {
             rows = chatAnalysisService.sanitizeRows(
                     isCorporate
-                            ? queryExecutionService.executeQuery(sql, session.storeId())
-                            : queryExecutionService.executeQuery(sql)
+                            ? queryExecutionService.executeQuery(sql, session.storeId(), requestedLimit)
+                            : queryExecutionService.executeQuery(sql, requestedLimit)
+            );
+            log.info(
+                    "top_reviewed_products originalQuestion=\"{}\" extractedLimit={} generatedSql=\"{}\" rowCount={}",
+                    question,
+                    requestedLimit,
+                    displaySql,
+                    rows.size()
             );
         } catch (DataAccessException dataAccessException) {
+            log.warn(
+                    "top_reviewed_products failed originalQuestion=\"{}\" extractedLimit={} generatedSql=\"{}\"",
+                    question,
+                    requestedLimit,
+                    displaySql,
+                    dataAccessException
+            );
             return new ChatResponse(
                     chatAnalysisService.escapeHtml(question),
                     null,
@@ -830,7 +884,7 @@ public class ChatService {
 
         return new ChatResponse(
                 chatAnalysisService.escapeHtml(question),
-                chatAnalysisService.escapeHtml(sql),
+                chatAnalysisService.escapeHtml(displaySql),
                 rows,
                 "Top reviewed products query executed successfully.",
                 elapsedMs(startTime),
@@ -839,19 +893,28 @@ public class ChatService {
                 null,
                 null,
                 buildSessionDetails(session),
-                chatAnalysisService.escapeHtml(buildTopReviewedProductsAnswer(rows)),
+                chatAnalysisService.escapeHtml(buildTopReviewedProductsAnswer(rows, requestedLimit)),
                 visualization.visualizationType(),
                 visualization.chartData(),
                 PIPELINE_STEPS
         );
     }
 
-    private String buildTopReviewedProductsAnswer(List<Map<String, Object>> rows) {
+    private String buildTopReviewedProductsAnswer(List<Map<String, Object>> rows, int requestedLimit) {
         if (rows == null || rows.isEmpty()) {
             return "Henüz yorum verisi bulunamadı.";
         }
 
-        StringBuilder answer = new StringBuilder("En iyi yorumlanmış 3 ürün:");
+        StringBuilder answer = new StringBuilder();
+        if (rows.size() < requestedLimit) {
+            answer.append("Veritabanında yorumlanmış sadece ")
+                    .append(rows.size())
+                    .append(" ürün bulundu. ");
+        }
+        answer.append("En iyi yorumlanmış ")
+                .append(requestedLimit)
+                .append(" ürün:");
+        answer.append("\nYalnızca yorumu olan ürünler dahil edilmiştir.");
         for (Map<String, Object> row : rows) {
             answer.append("\n- ")
                     .append(row.get("product_name"))
@@ -862,6 +925,14 @@ public class ChatService {
                     .append(" yorum");
         }
         return answer.toString();
+    }
+
+    private String buildReviewedProductsDisplaySql(String sql, Long storeId, int requestedLimit) {
+        String displaySql = sql;
+        if (storeId != null) {
+            displaySql = displaySql.replaceFirst("\\?", String.valueOf(storeId));
+        }
+        return displaySql.replaceFirst("\\?", String.valueOf(requestedLimit));
     }
 
     private ChatResponse answerLowestRatedProducts(String question, ChatSession session, long startTime) {
@@ -979,6 +1050,37 @@ public class ChatService {
                 .replace('ç', 'c');
         normalized = Normalizer.normalize(normalized, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
         return normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+    }
+
+    private int extractRequestedLimit(String question, int defaultLimit) {
+        String normalized = normalizeIntentText(question);
+        for (Pattern pattern : REQUESTED_LIMIT_PATTERNS) {
+            Matcher matcher = pattern.matcher(normalized);
+            if (matcher.find()) {
+                return clampRequestedLimit(Integer.parseInt(matcher.group(1)));
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : NUMBER_WORDS.entrySet()) {
+            String word = entry.getKey();
+            boolean commandNumber =
+                    Pattern.compile("\\b(top|first|best|show|list|en iyi|en yuksek)\\s+(?:me\\s+)?" + word + "\\b")
+                            .matcher(normalized)
+                            .find();
+            boolean numberBeforeProduct =
+                    Pattern.compile("\\b" + word + "\\s+(?:urun|urunu|urunler|urunleri|products?|items?)\\b")
+                            .matcher(normalized)
+                            .find();
+            if (commandNumber || numberBeforeProduct) {
+                return clampRequestedLimit(entry.getValue());
+            }
+        }
+
+        return clampRequestedLimit(defaultLimit);
+    }
+
+    private int clampRequestedLimit(int requestedLimit) {
+        return Math.max(1, Math.min(requestedLimit, MAX_REQUESTED_LIMIT));
     }
 
     private String rateLimitKey(ChatSession session) {

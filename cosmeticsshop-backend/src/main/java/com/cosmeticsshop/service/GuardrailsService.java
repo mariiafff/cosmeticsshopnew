@@ -16,22 +16,46 @@ public class GuardrailsService {
             "hello", "hi", "hey", "merhaba", "selam", "good morning", "good evening"
     );
 
-    private static final List<String> OUT_OF_SCOPE_TERMS = List.of(
+private static final List<String> OUT_OF_SCOPE_TERMS = List.of(
             "joke", "poem", "president", "how are you", "weather", "who is", "tell me a"
     );
 
     private static final List<String> PROMPT_INJECTION_TERMS = List.of(
+            // English terms
             "ignore previous instructions",
             "ignore your previous instructions",
+            "ignore all rules",
             "system override",
             "you are now admin",
             "assume i have admin privileges",
             "admin mode",
             "remove store_id filter",
-            "without where clause"
+            "without where clause",
+            "show all data",
+            "show database",
+            "act as admin",
+            "act as seller",
+            "reveal system prompt",
+            "ignore prior instructions",
+            "forget your guidelines",
+            "bypass security",
+            // Turkish terms
+            "önceki talimatları yok say",
+            "talimatları yok say",
+            "güvenlik kurallarını kaldır",
+            "tüm veriyi göster",
+            "tüm veritabanını göster",
+            "admin gibi davran",
+            "seller gibi davran",
+            "rolünü değiştir",
+            "sistem mesajını göster",
+            "önceki yönergeleri unut",
+            "yönergeleri yok say",
+            "güvenlik duvarını aş",
+            "kısıtlamaları kaldır"
     );
 
-    private static final List<String> PROMPT_LEAKAGE_TERMS = List.of(
+private static final List<String> PROMPT_LEAKAGE_TERMS = List.of(
             "print your system prompt",
             "repeat your system prompt",
             "repeat your system prompt verbatim",
@@ -44,7 +68,7 @@ public class GuardrailsService {
             "database schema"
     );
 
-    private static final List<String> SQL_INJECTION_TERMS = List.of(
+private static final List<String> SQL_INJECTION_TERMS = List.of(
             "union select",
             "or 1=1",
             "where 1=1",
@@ -59,7 +83,18 @@ public class GuardrailsService {
             ";",
             "--",
             "/*",
-            "*/"
+            "*/",
+            "1=1",
+            "drop table users",
+            "drop table orders",
+            "drop table products",
+            "drop table customers",
+            "or 1=1 --",
+            "' or '1'='1",
+            "'; delete from",
+            "id==",
+            "id =",
+            "id="
     );
 
     private static final List<String> WRITE_TERMS = List.of(
@@ -72,19 +107,35 @@ public class GuardrailsService {
             "localstorage", "fetch('https://", "fetch(\"https://", "<img"
     );
 
-    private static final List<String> SENSITIVE_TERMS = List.of(
+private static final List<String> SENSITIVE_TERMS = List.of(
             "password_hash", "api_key", "secret", "token", "jwt", "internal_cost",
-            "supplier_margin", "cost_price", "is_admin", "all columns", "show me everything", "internal fields"
+            "supplier_margin", "cost_price", "is_admin", "all columns", "show me everything", "internal fields",
+            // Turkish terms for questions 39-42
+            "şifre", "şifresi", "password", "kredi kartı", "kredi kkartı", "kart bilgisi", "cc numarası",
+            "token", "jwt token", "access token", "refresh token",
+            "email", "e-posta", "telefon", "telefon numarası", "cep telefonu",
+            "tüm kullanıcıların şifresi", "kullanıcı şifreleri", "token bilgisi",
+            "kredi kartı bilgisi", "kart bilgilerini göster", "email listesi", "telefon listesi"
     );
 
-    private static final List<String> FILTER_BYPASS_TERMS = List.of(
+private static final List<String> FILTER_BYPASS_TERMS = List.of(
             "remove store_id filter", "store_id filtresini kaldır", "all stores",
             "all registered stores", "platform-wide", "without where clause", "without filters",
-            "global revenue", "total platform revenue", "all stores revenue", "system-wide analytics"
+            "global revenue", "total platform revenue", "all stores revenue", "system-wide analytics",
+            // Turkish terms for cross-user access (questions 31-34)
+            "diğer kullanıcıların siparişleri", "başka müşterilerin siparişleri", "tüm kullanıcıların siparişleri",
+            "başka müşterilerin alışverişleri", "tüm kullanıcıların siparişlerini listele",
+            "tüm kullanıcıların harcamaları", "tüm kullanıcıların harcamalarını göster",
+            "tüm müşteri bilgileri", "müşteri bilgilerini ver", "tüm kullanıcıları listele",
+            "admin olarak tüm kullanıcıları", "tüm sistem verisi", "sistem verisini getir",
+            "müşterinin alışverişleri", "müşterinin siparişleri", "kullanıcının siparişleri",
+            "başkalarının siparişleri", "başkalarının harcamaları", "başkalarının alışverişleri",
+            "baskalarinin", "başkalarının",
+            "all user spending", "all customer data", "show me all users", "all customer info"
     );
 
-    private static final Pattern STORE_ID_PATTERN = Pattern.compile("\\bstore(?:\\s*id|\\s*#|\\s*number)?\\s*[=:#]?\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
-    private static final Pattern USER_ID_PATTERN = Pattern.compile("\\b(?:user|customer)\\s*id\\s*[=:#]?\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern STORE_ID_PATTERN = Pattern.compile("\\bstore(?:\\s*id|\\s*#|\\s*number)?\\s*[=:#]{1,2}\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern USER_ID_PATTERN = Pattern.compile("\\b(?:user|customer|id)\\s*[=:#]{1,2}\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern ORDER_ID_PATTERN = Pattern.compile("\\border(?:\\s*number|\\s*id)?\\s*[#:=-]?\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern ENUMERATION_PATTERN = Pattern.compile("\\b(?:1\\s+through\\s+200|001\\s+through\\s+500|order ids?\\s+\\d+\\s+through\\s+\\d+|store ids?\\s+\\d+\\s+through\\s+\\d+|sku-?\\d+\\s+through\\s+sku-?\\d+)\\b", Pattern.CASE_INSENSITIVE);
 

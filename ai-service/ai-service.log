@@ -1,0 +1,432 @@
+INFO:     Will watch for changes in these directories: ['/Users/mariiafateeva/Desktop/cosmeticsshop/ai-service']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [57084] using WatchFiles
+/Users/mariiafateeva/Desktop/cosmeticsshop/ai-service/.venv/lib/python3.9/site-packages/google/api_core/_python_version_support.py:242: FutureWarning: You are using a non-supported Python version (3.9.6). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.10, and then update google.api_core.
+  warnings.warn(message, FutureWarning)
+/Users/mariiafateeva/Desktop/cosmeticsshop/ai-service/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+/Users/mariiafateeva/Desktop/cosmeticsshop/ai-service/.venv/lib/python3.9/site-packages/google/auth/__init__.py:54: FutureWarning: You are using a Python version 3.9 past its end of life. Google will update google-auth with critical bug fixes on a best-effort basis, but not with any other fixes or features. Please upgrade your Python version, and then update google-auth.
+  warnings.warn(eol_message.format("3.9"), FutureWarning)
+/Users/mariiafateeva/Desktop/cosmeticsshop/ai-service/.venv/lib/python3.9/site-packages/google/oauth2/__init__.py:40: FutureWarning: You are using a Python version 3.9 past its end of life. Google will update google-auth with critical bug fixes on a best-effort basis, but not with any other fixes or features. Please upgrade your Python version, and then update google-auth.
+  warnings.warn(eol_message.format("3.9"), FutureWarning)
+INFO:     Started server process [57087]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:51721 - "GET /docs HTTP/1.1" 200 OK
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51743 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51758 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51762 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51767 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51768 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51769 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51827 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51832 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51875 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51881 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51888 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51889 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51890 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51891 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51899 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51900 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51946 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51952 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51960 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51961 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51962 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51963 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51969 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51972 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51974 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51984 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:51990 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52020 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52022 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52024 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52030 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52031 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52032 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52117 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52188 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52188 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52217 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52221 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52232 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52778 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:52779 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53148 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53150 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53280 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53281 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53284 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53286 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53288 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53290 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53292 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53293 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53294 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53298 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53299 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53474 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53476 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53477 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53527 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53530 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53531 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53565 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53596 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53597 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53601 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53605 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53607 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53608 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53648 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53649 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53652 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53658 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53659 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53660 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53661 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53688 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53690 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53696 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53698 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53773 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53774 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53775 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53780 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53856 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53916 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53941 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53979 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53988 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53990 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:53995 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54004 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54007 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54013 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54016 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54021 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54040 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54045 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54067 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54068 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54113 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54113 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54162 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54194 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54198 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54199 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54203 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54240 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54266 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54270 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54271 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54275 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54277 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54279 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54282 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54287 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54338 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54378 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54381 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54382 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54383 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54387 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54391 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54425 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54425 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54447 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54451 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54453 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54456 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54477 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54481 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54482 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54483 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54485 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54486 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54490 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54491 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54498 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54499 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54500 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54504 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54505 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54509 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54510 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54511 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54512 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54516 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54518 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.
+WARNING:  Unsupported upgrade request.
+INFO:     127.0.0.1:54522 - "POST /chat HTTP/1.1" 422 Unprocessable Entity
+WARNING:  Invalid HTTP request received.

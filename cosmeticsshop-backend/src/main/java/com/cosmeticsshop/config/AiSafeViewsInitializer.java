@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
@@ -34,7 +35,7 @@ public class AiSafeViewsInitializer {
     }
 
     private void createSellerProductSalesSummary(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("""
+        replaceView(jdbcTemplate, "ai_safe.seller_product_sales_summary", """
                 create or replace view ai_safe.seller_product_sales_summary as
                 select
                     s.id as store_id,
@@ -53,7 +54,7 @@ public class AiSafeViewsInitializer {
     }
 
     private void createSellerRecentSoldProducts(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("""
+        replaceView(jdbcTemplate, "ai_safe.seller_recent_sold_products", """
                 create or replace view ai_safe.seller_recent_sold_products as
                 select
                     s.id as store_id,
@@ -73,7 +74,7 @@ public class AiSafeViewsInitializer {
     }
 
     private void createSellerCustomerSummary(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("""
+        replaceView(jdbcTemplate, "ai_safe.seller_customer_summary", """
                 create or replace view ai_safe.seller_customer_summary as
                 select
                     s.id as store_id,
@@ -89,7 +90,7 @@ public class AiSafeViewsInitializer {
     }
 
     private void createSellerRevenueSummary(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("""
+        replaceView(jdbcTemplate, "ai_safe.seller_revenue_summary", """
                 create or replace view ai_safe.seller_revenue_summary as
                 select
                     s.id as store_id,
@@ -106,7 +107,7 @@ public class AiSafeViewsInitializer {
     }
 
     private void createUserRecentOrders(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("""
+        replaceView(jdbcTemplate, "ai_safe.user_recent_orders", """
                 create or replace view ai_safe.user_recent_orders as
                 select
                     o.id as order_id,
@@ -119,20 +120,25 @@ public class AiSafeViewsInitializer {
     }
 
     private void createUserOrderItems(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("""
+        replaceView(jdbcTemplate, "ai_safe.user_order_items", """
                 create or replace view ai_safe.user_order_items as
                 select
                     oi.order_id,
+                    p.id as product_id,
                     p.name as product_name,
+                    p.category_id,
+                    c.name as category_name,
                     oi.quantity,
-                    oi.unit_price
+                    oi.unit_price,
+                    (oi.quantity * oi.unit_price) as line_total
                 from public.order_items oi
                 join public.products p on p.id = oi.product_id
+                left join public.categories c on c.id = p.category_id
                 """);
     }
 
     private void createUserOrderSummary(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("""
+        replaceView(jdbcTemplate, "ai_safe.user_order_summary", """
                 create or replace view ai_safe.user_order_summary as
                 select
                     o.user_id as customer_id,
@@ -143,6 +149,28 @@ public class AiSafeViewsInitializer {
                 where lower(coalesce(o.status, '')) in ('delivered', 'completed', 'paid', 'placed')
                 group by o.user_id
                 """);
+    }
+
+    private void replaceView(JdbcTemplate jdbcTemplate, String viewName, String createSql) {
+        try {
+            jdbcTemplate.execute(createSql);
+        } catch (BadSqlGrammarException exception) {
+            if (!isViewShapeChangeError(exception)) {
+                throw exception;
+            }
+            log.warn("Recreating ai_safe view {} because its column shape changed.", viewName);
+            jdbcTemplate.execute("drop view if exists " + viewName + " cascade");
+            jdbcTemplate.execute(createSql);
+        }
+    }
+
+    private boolean isViewShapeChangeError(BadSqlGrammarException exception) {
+        String message = exception.getMostSpecificCause() == null
+                ? exception.getMessage()
+                : exception.getMostSpecificCause().getMessage();
+        return message != null
+                && (message.contains("cannot drop columns from view")
+                || message.contains("cannot change name of view column"));
     }
 
     private void logSellerVerification(JdbcTemplate jdbcTemplate) {

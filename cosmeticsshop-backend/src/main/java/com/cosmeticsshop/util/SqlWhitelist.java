@@ -89,7 +89,8 @@ public class SqlWhitelist {
                 "order_id", "customer_id", "order_date", "total_amount"
         ));
         objects.put("ai_safe.user_order_items", Set.of(
-                "order_id", "product_name", "quantity", "unit_price", "line_total"
+                "order_id", "product_id", "product_name", "category_id", "category_name",
+                "quantity", "unit_price", "line_total"
         ));
         objects.put("ai_safe.user_order_summary", Set.of(
                 "customer_id", "total_orders", "avg_order_value", "total_spent",
