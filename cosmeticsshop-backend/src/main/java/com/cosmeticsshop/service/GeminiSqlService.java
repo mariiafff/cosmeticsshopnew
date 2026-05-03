@@ -147,6 +147,8 @@ public class GeminiSqlService {
             "SELECT order_id, customer_id, order_date, total_amount FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 10";
     private static final String USER_LAST_ORDER_PERCENTAGE_SQL =
             "SELECT r.order_id, r.total_amount AS last_order_amount, s.total_spent, CASE WHEN s.total_spent = 0 THEN 0 ELSE (r.total_amount / s.total_spent) * 100 END AS percentage_of_total_spent FROM ai_safe.user_recent_orders r JOIN ai_safe.user_order_summary s ON s.customer_id = r.customer_id WHERE r.customer_id = ? ORDER BY r.order_date DESC LIMIT 1";
+    private static final String USER_LAST_ORDER_OF_RECENT_ORDERS_PERCENTAGE_SQL =
+            "SELECT latest.order_id, latest.total_amount AS last_order_amount, SUM(r.total_amount) AS recent_orders_total, CASE WHEN SUM(r.total_amount) = 0 THEN 0 ELSE (latest.total_amount / SUM(r.total_amount)) * 100 END AS percentage_of_recent_orders FROM ai_safe.user_recent_orders latest JOIN ai_safe.user_recent_orders r ON r.customer_id = latest.customer_id WHERE latest.customer_id = ? AND latest.order_id = (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 1) AND r.order_id IN (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 10) GROUP BY latest.order_id, latest.total_amount";
     private static final String USER_MOST_EXPENSIVE_ORDER_PERCENTAGE_SQL =
             "SELECT r.order_id, r.total_amount AS most_expensive_order_amount, s.total_spent, CASE WHEN s.total_spent = 0 THEN 0 ELSE (r.total_amount / s.total_spent) * 100 END AS percentage_of_total_spent FROM ai_safe.user_recent_orders r JOIN ai_safe.user_order_summary s ON s.customer_id = r.customer_id WHERE r.customer_id = ? ORDER BY r.total_amount DESC LIMIT 1";
     private static final String USER_LAST_ORDER_VS_PREVIOUS_SQL =
@@ -162,7 +164,7 @@ public class GeminiSqlService {
     private static final String USER_LAST_ORDER_DISTINCT_PRODUCT_COUNT_SQL =
             "SELECT r.order_id, COUNT(DISTINCT i.product_id) AS different_product_count FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id = (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 1) GROUP BY r.order_id";
     private static final String USER_LAST_ORDER_CATEGORIES_SQL =
-            "SELECT COALESCE(i.category_name, 'Kategorisiz') AS category_name, COUNT(DISTINCT i.product_id) AS product_count, SUM(i.quantity) AS total_quantity FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id = (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 1) GROUP BY i.category_name ORDER BY total_quantity DESC LIMIT 20";
+            "SELECT COALESCE(i.category_name, 'Diğer') AS category_name, COUNT(DISTINCT i.product_id) AS product_count, SUM(i.quantity) AS total_quantity FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id = (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 1) GROUP BY i.category_name ORDER BY total_quantity DESC LIMIT 20";
     private static final Pattern LEADING_NUMBER_PATTERN = Pattern.compile("\\b(?:top|last|son|ilk)\\s+(\\d{1,3})\\b");
     private static final Pattern TRAILING_NUMBER_PATTERN = Pattern.compile("\\b(\\d{1,3})\\s+(?:urun|urunleri|product|products|siparis|siparisim|order|orders|purchase|purchases|alisveris|alisverisim)\\b");
     private static final Map<String, Integer> NUMBER_WORDS = Map.ofEntries(
@@ -440,11 +442,17 @@ public class GeminiSqlService {
                 || normalizedIntent.contains("percentage")
                 || normalizedIntent.contains("percent");
         if (asksPercentage) {
-            if (asksLast && asksOrder && orderWindow > 1) {
-                return Optional.of(userLastOrdersPercentageSql(orderWindow));
-            }
             if (normalizedIntent.contains("en pahali") || normalizedIntent.contains("most expensive")) {
                 return Optional.of(USER_MOST_EXPENSIVE_ORDER_PERCENTAGE_SQL);
+            }
+            if (asksLast && asksOrder) {
+                int detectedOrderLimit = detectOrderLimit(normalizedIntent);
+                if (asksProduct && detectedOrderLimit > 1) {
+                    return Optional.of(USER_LAST_ORDER_OF_RECENT_ORDERS_PERCENTAGE_SQL);
+                }
+                if (detectedOrderLimit > 1) {
+                    return Optional.of(userLastOrdersPercentageSql(detectedOrderLimit));
+                }
             }
             return Optional.of(USER_LAST_ORDER_PERCENTAGE_SQL);
         }
@@ -564,6 +572,9 @@ public class GeminiSqlService {
             int detectedOrderLimit = detectOrderLimit(normalizedIntent);
             if (detectedOrderLimit == 1) {
                 log.info("order_limit_detection intent=SINGULAR applied_limit=1 question=\"{}\"", normalizedIntent);
+                if (normalizedIntent.contains("goster") || normalizedIntent.contains("show") || normalizedIntent.contains("listele")) {
+                    return Optional.of(USER_LAST_ORDER_ITEMS_SQL);
+                }
                 return Optional.of(USER_LAST_ORDER_SQL);
             } else {
                 log.info("order_limit_detection intent=PLURAL applied_limit={} question=\"{}\"", detectedOrderLimit, normalizedIntent);
@@ -619,7 +630,7 @@ public class GeminiSqlService {
     }
 
     private String userTopCategoriesByQuantitySql(int limit) {
-        return "SELECT COALESCE(i.category_name, 'Kategorisiz') AS category_name, SUM(i.quantity) AS total_quantity, SUM(i.line_total) AS total_spent FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? GROUP BY i.category_name ORDER BY total_quantity DESC, total_spent DESC LIMIT " + clampLimit(limit);
+        return "SELECT COALESCE(i.category_name, 'Diğer') AS category_name, SUM(i.quantity) AS total_quantity, SUM(i.line_total) AS total_spent FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? GROUP BY i.category_name ORDER BY total_quantity DESC, total_spent DESC LIMIT " + clampLimit(limit);
     }
 
     /**
@@ -640,11 +651,11 @@ public class GeminiSqlService {
     }
 
     private String userTopCategoriesInLastOrdersByQuantitySql(int orderWindow, int limit) {
-        return "SELECT COALESCE(i.category_name, 'Kategorisiz') AS category_name, SUM(i.quantity) AS total_quantity, SUM(i.line_total) AS total_spent FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id IN (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT " + clampLimit(orderWindow) + ") GROUP BY i.category_name ORDER BY total_quantity DESC, total_spent DESC LIMIT " + clampLimit(limit);
+        return "SELECT COALESCE(i.category_name, 'Diğer') AS category_name, SUM(i.quantity) AS total_quantity, SUM(i.line_total) AS total_spent FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id IN (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT " + clampLimit(orderWindow) + ") GROUP BY i.category_name ORDER BY total_quantity DESC, total_spent DESC LIMIT " + clampLimit(limit);
     }
 
     private String userCategorySpendInLastOrdersSql(int orderWindow, int limit) {
-        return "SELECT COALESCE(i.category_name, 'Kategorisiz') AS category_name, SUM(i.line_total) AS total_spent, SUM(i.quantity) AS total_quantity FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id IN (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT " + clampLimit(orderWindow) + ") GROUP BY i.category_name ORDER BY total_spent DESC, total_quantity DESC LIMIT " + clampLimit(limit);
+        return "SELECT COALESCE(i.category_name, 'Diğer') AS category_name, SUM(i.line_total) AS total_spent, SUM(i.quantity) AS total_quantity FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id IN (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT " + clampLimit(orderWindow) + ") GROUP BY i.category_name ORDER BY total_spent DESC, total_quantity DESC LIMIT " + clampLimit(limit);
     }
 
     private int extractRequestedLimit(String normalizedIntent, int defaultLimit) {
@@ -790,7 +801,4 @@ public class GeminiSqlService {
         return sql.replace("LIMIT ?", "LIMIT " + limit);
     }
 
-    private String sellerTopProductsSql(int limit) {
-        return replaceLimit(SELLER_TOP_PRODUCTS_SQL, limit);
-    }
 }

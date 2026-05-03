@@ -33,41 +33,70 @@ public class ProductService {
     }
 
     public Page<Product> getProductsPage(int page, int size, String search, String sort) {
-        return getProductsPage(page, size, search, sort, false);
+        return getProductsPage(page, size, search, sort, false, null);
     }
 
     public Page<Product> getProductsPage(int page, int size, String search, String sort, boolean includeInactive) {
+        return getProductsPage(page, size, search, sort, includeInactive, null);
+    }
+
+    public Page<Product> getProductsPage(int page, int size, String search, String sort, boolean includeInactive, Long categoryId) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), normalizeSize(size), buildSort(sort));
         Page<Product> products;
         if (includeInactive) {
-            products = (search == null || search.isBlank())
-                    ? productRepository.findAll(pageable)
-                    : productRepository.findByNameContainingIgnoreCaseOrSkuContainingIgnoreCaseOrStockCodeContainingIgnoreCase(
+            if (search == null || search.isBlank()) {
+                products = categoryId == null
+                        ? productRepository.findAll(pageable)
+                        : productRepository.findByCategory_Id(categoryId, pageable);
+            } else if (categoryId == null) {
+                products = productRepository.findByNameContainingIgnoreCaseOrSkuContainingIgnoreCaseOrStockCodeContainingIgnoreCase(
                             search.trim(),
                             search.trim(),
                             search.trim(),
                             pageable
                     );
+            } else {
+                products = productRepository.findByCategory_IdAndNameContainingIgnoreCaseOrCategory_IdAndSkuContainingIgnoreCaseOrCategory_IdAndStockCodeContainingIgnoreCase(
+                        categoryId,
+                        search.trim(),
+                        categoryId,
+                        search.trim(),
+                        categoryId,
+                        search.trim(),
+                        pageable
+                );
+            }
         } else {
-            products = (search == null || search.isBlank())
-                    ? productRepository.findByStatusIgnoreCase("ACTIVE", pageable)
-                    : productRepository.searchActiveProducts("ACTIVE", search.trim(), pageable);
+            if (search == null || search.isBlank()) {
+                products = categoryId == null
+                        ? productRepository.findByStatusIgnoreCase("ACTIVE", pageable)
+                        : productRepository.findByStatusIgnoreCaseAndCategory_Id("ACTIVE", categoryId, pageable);
+            } else {
+                products = categoryId == null
+                        ? productRepository.searchActiveProducts("ACTIVE", search.trim(), pageable)
+                        : productRepository.searchActiveProductsByCategory("ACTIVE", search.trim(), categoryId, pageable);
+            }
         }
         log.info(
-                "PRODUCT PAGE FROM REPOSITORY = {} items, total={} page={} size={} search={} sort={} includeInactive={}",
+                "PRODUCT PAGE FROM REPOSITORY = {} items, total={} page={} size={} search={} sort={} includeInactive={} categoryId={}",
                 products.getNumberOfElements(),
                 products.getTotalElements(),
                 products.getNumber(),
                 products.getSize(),
                 search,
                 sort,
-                includeInactive
+                includeInactive,
+                categoryId
         );
         return products;
     }
 
     public Page<ProductResponseDto> getProductResponsePage(int page, int size, String search, String sort, boolean includeInactive) {
-        return getProductsPage(page, size, search, sort, includeInactive).map(this::toProductResponseDto);
+        return getProductResponsePage(page, size, search, sort, includeInactive, null);
+    }
+
+    public Page<ProductResponseDto> getProductResponsePage(int page, int size, String search, String sort, boolean includeInactive, Long categoryId) {
+        return getProductsPage(page, size, search, sort, includeInactive, categoryId).map(this::toProductResponseDto);
     }
 
     public Page<Product> getProductsPageForStores(
@@ -78,33 +107,45 @@ public class ProductService {
             boolean includeInactive,
             List<Long> storeIds
     ) {
+        return getProductsPageForStores(page, size, search, sort, includeInactive, storeIds, null);
+    }
+
+    public Page<Product> getProductsPageForStores(
+            int page,
+            int size,
+            String search,
+            String sort,
+            boolean includeInactive,
+            List<Long> storeIds,
+            Long categoryId
+    ) {
         if (storeIds == null || storeIds.isEmpty()) {
             return Page.empty(PageRequest.of(Math.max(page, 0), normalizeSize(size), buildSort(sort)));
         }
 
         Pageable pageable = PageRequest.of(Math.max(page, 0), normalizeSize(size), buildSort(sort));
         String normalizedSearch = search == null ? null : search.trim();
-        Page<Product> products = (normalizedSearch == null || normalizedSearch.isBlank())
-                ? productRepository.findByStoreIdsWithStatusScope(
-                        storeIds.stream().distinct().toList(),
-                        includeInactive,
-                        pageable
-                )
-                : productRepository.searchByStoreIds(
-                        storeIds.stream().distinct().toList(),
-                        normalizedSearch,
-                        includeInactive,
-                        pageable
-                );
+        List<Long> distinctStoreIds = storeIds.stream().distinct().toList();
+        Page<Product> products;
+        if (normalizedSearch == null || normalizedSearch.isBlank()) {
+            products = categoryId == null
+                    ? productRepository.findByStoreIdsWithStatusScope(distinctStoreIds, includeInactive, pageable)
+                    : productRepository.findByStoreIdsAndCategoryWithStatusScope(distinctStoreIds, categoryId, includeInactive, pageable);
+        } else {
+            products = categoryId == null
+                    ? productRepository.searchByStoreIds(distinctStoreIds, normalizedSearch, includeInactive, pageable)
+                    : productRepository.searchByStoreIdsAndCategory(distinctStoreIds, categoryId, normalizedSearch, includeInactive, pageable);
+        }
         log.info(
-                "STORE PRODUCT PAGE = {} items, total={} stores={} page={} size={} search={} includeInactive={}",
+                "STORE PRODUCT PAGE = {} items, total={} stores={} page={} size={} search={} includeInactive={} categoryId={}",
                 products.getNumberOfElements(),
                 products.getTotalElements(),
                 storeIds,
                 products.getNumber(),
                 products.getSize(),
                 search,
-                includeInactive
+                includeInactive,
+                categoryId
         );
         return products;
     }
@@ -117,7 +158,19 @@ public class ProductService {
             boolean includeInactive,
             List<Long> storeIds
     ) {
-        return getProductsPageForStores(page, size, search, sort, includeInactive, storeIds).map(this::toProductResponseDto);
+        return getProductResponsePageForStores(page, size, search, sort, includeInactive, storeIds, null);
+    }
+
+    public Page<ProductResponseDto> getProductResponsePageForStores(
+            int page,
+            int size,
+            String search,
+            String sort,
+            boolean includeInactive,
+            List<Long> storeIds,
+            Long categoryId
+    ) {
+        return getProductsPageForStores(page, size, search, sort, includeInactive, storeIds, categoryId).map(this::toProductResponseDto);
     }
 
     public Product getProductById(Long id) {

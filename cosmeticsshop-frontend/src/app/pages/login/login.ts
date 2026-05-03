@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { AuthService, LoginRequest } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login-page',
@@ -20,6 +21,7 @@ export class LoginPage implements OnInit {
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');
   protected readonly isSubmitting = signal(false);
+  protected readonly googleLoginUrl = `${environment.apiBaseUrl.replace(/\/api$/, '')}/oauth2/authorization/google`;
 
   protected readonly credentials: LoginRequest = {
     email: '',
@@ -29,6 +31,9 @@ export class LoginPage implements OnInit {
   ngOnInit(): void {
     if (this.route.snapshot.queryParams['registered'] === 'true') {
       this.successMessage.set('Registration successful. Please login.');
+    }
+    if (this.route.snapshot.queryParams['oauthError'] === 'true') {
+      this.errorMessage.set('Google login could not be completed. Check the Google OAuth setup and try again.');
     }
   }
 

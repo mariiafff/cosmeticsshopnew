@@ -20,6 +20,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Page<Product> findByStatusIgnoreCase(String status, Pageable pageable);
 
+    Page<Product> findByStatusIgnoreCaseAndCategory_Id(String status, Long categoryId, Pageable pageable);
+
     @Query("""
             select p
             from Product p
@@ -35,6 +37,24 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("""
             select p
             from Product p
+            where lower(p.status) = lower(:status)
+              and p.category.id = :categoryId
+              and (
+                lower(p.name) like lower(concat('%', :search, '%'))
+                or lower(coalesce(p.sku, '')) like lower(concat('%', :search, '%'))
+                or lower(coalesce(p.stockCode, '')) like lower(concat('%', :search, '%'))
+              )
+            """)
+    Page<Product> searchActiveProductsByCategory(
+            @Param("status") String status,
+            @Param("search") String search,
+            @Param("categoryId") Long categoryId,
+            Pageable pageable
+    );
+
+    @Query("""
+            select p
+            from Product p
             where p.store.id in :storeIds
               and (
                 :includeInactive = true
@@ -43,6 +63,23 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             """)
     Page<Product> findByStoreIdsWithStatusScope(
             @Param("storeIds") List<Long> storeIds,
+            @Param("includeInactive") boolean includeInactive,
+            Pageable pageable
+    );
+
+    @Query("""
+            select p
+            from Product p
+            where p.store.id in :storeIds
+              and p.category.id = :categoryId
+              and (
+                :includeInactive = true
+                or lower(coalesce(p.status, 'ACTIVE')) = 'active'
+              )
+            """)
+    Page<Product> findByStoreIdsAndCategoryWithStatusScope(
+            @Param("storeIds") List<Long> storeIds,
+            @Param("categoryId") Long categoryId,
             @Param("includeInactive") boolean includeInactive,
             Pageable pageable
     );
@@ -68,9 +105,44 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             Pageable pageable
     );
 
+    @Query("""
+            select p
+            from Product p
+            where p.store.id in :storeIds
+              and p.category.id = :categoryId
+              and (
+                :includeInactive = true
+                or lower(coalesce(p.status, 'ACTIVE')) = 'active'
+              )
+              and (
+                lower(p.name) like lower(concat('%', :search, '%'))
+                or lower(coalesce(p.sku, '')) like lower(concat('%', :search, '%'))
+                or lower(coalesce(p.stockCode, '')) like lower(concat('%', :search, '%'))
+              )
+            """)
+    Page<Product> searchByStoreIdsAndCategory(
+            @Param("storeIds") List<Long> storeIds,
+            @Param("categoryId") Long categoryId,
+            @Param("search") String search,
+            @Param("includeInactive") boolean includeInactive,
+            Pageable pageable
+    );
+
     Page<Product> findByNameContainingIgnoreCaseOrSkuContainingIgnoreCaseOrStockCodeContainingIgnoreCase(
             String name,
             String sku,
+            String stockCode,
+            Pageable pageable
+    );
+
+    Page<Product> findByCategory_Id(Long categoryId, Pageable pageable);
+
+    Page<Product> findByCategory_IdAndNameContainingIgnoreCaseOrCategory_IdAndSkuContainingIgnoreCaseOrCategory_IdAndStockCodeContainingIgnoreCase(
+            Long nameCategoryId,
+            String name,
+            Long skuCategoryId,
+            String sku,
+            Long stockCodeCategoryId,
             String stockCode,
             Pageable pageable
     );

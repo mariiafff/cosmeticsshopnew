@@ -83,6 +83,46 @@ button:disabled {
   cursor: wait;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #6d665d;
+  font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: rgba(21, 21, 21, 0.14);
+}
+
+.google-login {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(21, 21, 21, 0.22);
+  background: #fffdf9;
+  color: #151515;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.google-login__mark {
+  width: 1.6rem;
+  height: 1.6rem;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(21, 21, 21, 0.18);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
 .field-error {
   margin: 0.25rem 0 0;
   color: #b14444;

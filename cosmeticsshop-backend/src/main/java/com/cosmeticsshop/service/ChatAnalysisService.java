@@ -46,6 +46,15 @@ public class ChatAnalysisService {
                     + formatNumber(firstRow.get("total_revenue")) + ".";
         }
 
+        if (firstRow.containsKey("percentage_of_recent_orders")) {
+            if (isTurkishQuestion(normalized)) {
+                return buildTurkishLastOrderOfRecentOrdersPercentageAnswer(firstRow);
+            }
+            return "Your last order was "
+                    + formatNumber(getRowValue(firstRow, "percentage_of_recent_orders"))
+                    + "% of your recent orders total.";
+        }
+
         if (firstRow.containsKey("percentage_of_total_spent")) {
             if (isTurkishQuestion(normalized)
                     && getRowValue(firstRow, "last_order_amount") != null
@@ -99,11 +108,9 @@ public class ChatAnalysisService {
 
         if (isUserScopedQuestion(normalized) && firstRow.containsKey("product_name")) {
             if (rows.size() > 1) {
-                return isTurkishQuestion(normalized)
-                        ? "İsteğinize göre son siparişlerinizdeki " + rows.size() + " ürün listelendi."
-                        : "I have listed " + rows.size() + " products from your recent orders as requested.";
+                return buildLatestOrderItemsAnswer(firstRow, rows, isTurkishQuestion(normalized));
             }
-            return buildLatestOrderItemsAnswer(firstRow, rows);
+            return buildLatestOrderItemsAnswer(firstRow, rows, isTurkishQuestion(normalized));
         }
 
         if (isUserScopedQuestion(normalized) && firstRow.containsKey("avg_order_value")) {
@@ -151,22 +158,22 @@ public class ChatAnalysisService {
                 && (normalized.contains("ürün") || normalized.contains("urun") || normalized.contains("product"))
                 && firstRow.containsKey("product_name")) {
             
-            if (normalized.contains("en cok") || normalized.contains("en fazla") || normalized.contains("most sold") || normalized.contains("top selling")) {
+            if (normalized.contains("yorum") || normalized.contains("review") || normalized.contains("puan") || normalized.contains("rating")) {
                 return isTurkishQuestion(normalized)
-                        ? "Mağazanızda en çok satılan " + rows.size() + " ürün listelendi."
-                        : "I have listed your top " + rows.size() + " selling products.";
+                        ? "Mağazanızdaki ürünler için yorum ve puan analizleri listelendi."
+                        : "I have listed the review and rating analysis for your products.";
+            }
+            if (normalized.contains("en cok") || normalized.contains("en çok") || normalized.contains("en fazla") || normalized.contains("most sold") || normalized.contains("top selling")) {
+                return isTurkishQuestion(normalized)
+                        ? "Mağazanızda en çok satılan " + rows.size() + " ürün listelendi. İlk sırada " + firstRow.get("product_name") + " var."
+                        : "I have listed your top " + rows.size() + " selling products. The top product is " + firstRow.get("product_name") + ".";
             }
             if (normalized.contains("en az") || normalized.contains("least sold") || normalized.contains("worst selling")) {
                 return isTurkishQuestion(normalized)
                         ? "Mağazanızda en az satılan " + rows.size() + " ürün listelendi."
                         : "I have listed your " + rows.size() + " least sold products.";
             }
-            if (normalized.contains("yorum") || normalized.contains("review") || normalized.contains("puan") || normalized.contains("rating")) {
-                return isTurkishQuestion(normalized)
-                        ? "Mağazanızdaki ürünler için yorum ve puan analizleri listelendi."
-                        : "I have listed the review and rating analysis for your products.";
-            }
-            
+
             if (rows.size() > 1) {
                 return isTurkishQuestion(normalized)
                         ? "Mağazanızdaki ilgili ürünler listelendi."
@@ -297,6 +304,21 @@ public class ChatAnalysisService {
                 + "’ini oluşturuyor.";
     }
 
+    private String buildTurkishLastOrderOfRecentOrdersPercentageAnswer(Map<String, Object> row) {
+        Object recentOrdersTotal = getRowValue(row, "recent_orders_total");
+        if (recentOrdersTotal instanceof Number number && number.doubleValue() == 0) {
+            return "Son alışverişlerinizin toplamı 0 olduğu için oran hesaplanamıyor.";
+        }
+
+        return "Son siparişinizdeki ürünlerin toplamı "
+                + formatSummaryNumber(getRowValue(row, "last_order_amount"))
+                + " TL. Son 10 alışverişinizin toplamı "
+                + formatSummaryNumber(recentOrdersTotal)
+                + " TL olduğu için bu ürünler son 10 alışverişinizin %"
+                + formatSummaryNumber(getRowValue(row, "percentage_of_recent_orders"))
+                + "’ini oluşturuyor.";
+    }
+
     private Object getRowValue(Map<String, Object> row, String key) {
         if (row.containsKey(key)) {
             return row.get(key);
@@ -329,14 +351,20 @@ public class ChatAnalysisService {
                 || normalized.contains("son ");
     }
 
-    private String buildLatestOrderItemsAnswer(Map<String, Object> firstRow, List<Map<String, Object>> rows) {
+    private String buildLatestOrderItemsAnswer(Map<String, Object> firstRow, List<Map<String, Object>> rows, boolean turkish) {
         StringBuilder answer = new StringBuilder();
         if (firstRow.containsKey("total_amount")) {
-            answer.append("Your latest order total is ")
-                    .append(formatNumber(firstRow.get("total_amount")))
-                    .append(". It includes:");
+            if (turkish) {
+                answer.append("Son siparişinizin toplamı ")
+                        .append(formatNumber(firstRow.get("total_amount")))
+                        .append(" TL. İçerdiği ürünler:");
+            } else {
+                answer.append("Your latest order total is ")
+                        .append(formatNumber(firstRow.get("total_amount")))
+                        .append(". It includes:");
+            }
         } else {
-            answer.append("Your latest order includes:");
+            answer.append(turkish ? "Son siparişinizdeki ürünler:" : "Your latest order includes:");
         }
 
         for (Map<String, Object> row : rows) {

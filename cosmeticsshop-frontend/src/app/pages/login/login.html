@@ -48,6 +48,15 @@
       {{ isSubmitting() ? 'Logging in...' : 'Login' }}
     </button>
 
+    <div class="auth-divider">
+      <span>or</span>
+    </div>
+
+    <a class="google-login" [href]="googleLoginUrl">
+      <span class="google-login__mark">G</span>
+      Google ile giriş yap
+    </a>
+
     @if (successMessage()) {
       <p class="auth-message auth-message--success">{{ successMessage() }}</p>
     }

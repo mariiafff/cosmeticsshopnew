@@ -149,15 +149,15 @@ public class OrderService {
     }
 
     public List<Order> getOrdersByUserId(Long userId) {
-        return orderRepository.findByUser_Id(userId);
+        return orderRepository.findByUser_IdOrderByCreatedAtDescIdDesc(userId);
     }
 
     public List<OrderResponse> getOrderResponsesByUserId(Long userId) {
-        return toOrderResponses(orderRepository.findByUser_Id(userId));
+        return toOrderResponses(orderRepository.findByUser_IdOrderByCreatedAtDescIdDesc(userId));
     }
 
     public List<Order> getOrdersByStoreId(Long storeId) {
-        return orderRepository.findByStore_Id(storeId);
+        return orderRepository.findByStore_IdOrderByCreatedAtDescIdDesc(storeId);
     }
 
     public List<OrderResponse> getOrderResponsesByStoreIds(List<Long> storeIds) {

@@ -67,9 +67,21 @@ export class OrdersPage implements OnInit {
 
   private sortNewestFirst(orders: Order[]): Order[] {
     return [...orders].sort((first, second) => {
-      const firstTime = first.createdAt ? new Date(first.createdAt).getTime() : 0;
-      const secondTime = second.createdAt ? new Date(second.createdAt).getTime() : 0;
-      return secondTime - firstTime;
+      const firstTime = this.orderTime(first);
+      const secondTime = this.orderTime(second);
+      if (firstTime !== secondTime) {
+        return secondTime - firstTime;
+      }
+      return (second.id ?? 0) - (first.id ?? 0);
     });
+  }
+
+  private orderTime(order: Order): number {
+    const rawDate = order.createdAt ?? order.orderDate;
+    if (!rawDate) {
+      return 0;
+    }
+    const timestamp = new Date(rawDate).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
   }
 }

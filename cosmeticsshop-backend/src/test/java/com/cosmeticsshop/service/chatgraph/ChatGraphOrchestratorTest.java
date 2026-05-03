@@ -32,6 +32,7 @@ class ChatGraphOrchestratorTest {
     private static final String SELLER_TOP_PRODUCTS_SQL = "SELECT product_name, total_quantity AS total_sold FROM ai_safe.seller_product_sales_summary WHERE store_id = ? AND total_quantity > 0 ORDER BY total_sold DESC LIMIT 5";
     private static final String USER_LAST_ORDER_SQL = "SELECT order_id, customer_id, order_date, total_amount FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 1";
     private static final String USER_LAST_ORDER_ITEMS_SQL = "SELECT r.order_id, r.order_date, r.total_amount, i.product_name, i.quantity, i.unit_price, (i.quantity * i.unit_price) AS line_total FROM ai_safe.user_order_items i JOIN ai_safe.user_recent_orders r ON r.order_id = i.order_id WHERE r.customer_id = ? AND r.order_id = (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 1) ORDER BY i.product_name LIMIT 50";
+    private static final String USER_LAST_ORDER_OF_RECENT_ORDERS_PERCENTAGE_SQL = "SELECT latest.order_id, latest.total_amount AS last_order_amount, SUM(r.total_amount) AS recent_orders_total, CASE WHEN SUM(r.total_amount) = 0 THEN 0 ELSE (latest.total_amount / SUM(r.total_amount)) * 100 END AS percentage_of_recent_orders FROM ai_safe.user_recent_orders latest JOIN ai_safe.user_recent_orders r ON r.customer_id = latest.customer_id WHERE latest.customer_id = ? AND latest.order_id = (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 1) AND r.order_id IN (SELECT order_id FROM ai_safe.user_recent_orders WHERE customer_id = ? ORDER BY order_date DESC LIMIT 10) GROUP BY latest.order_id, latest.total_amount";
 
     private FakeGeminiSqlService geminiSqlService;
     private FakeQueryExecutionService queryExecutionService;
@@ -253,8 +254,27 @@ class ChatGraphOrchestratorTest {
         assertEquals(List.of(11L, 11L), queryExecutionService.lastArgs);
         assertEquals(2, response.getRows().size());
         assertTrue(response.getRows().get(0).containsKey("product_name"));
-        assertTrue(response.getFinalAnswer().contains("Your latest order total is 103.3. It includes:"));
+        assertTrue(response.getFinalAnswer().contains("Son siparişinizin toplamı 103.3 TL"));
         assertTrue(response.getFinalAnswer().contains("Product A x2 = 40"));
+    }
+
+    @Test
+    void individualShowLatestOrderReturnsItems() {
+        session = new ChatSession(true, "INDIVIDUAL", "demo@luime.com", 11L, null, "127.0.0.1");
+        useRealGeminiSqlService();
+        queryExecutionService.thenReturn(List.of(
+                Map.of("order_id", 1001, "total_amount", 5.85, "product_name", "15 PINK FLUFFY CHICKS IN BOX", "quantity", 1, "unit_price", 2.95, "line_total", 2.95),
+                Map.of("order_id", 1001, "total_amount", 5.85, "product_name", "2 DAISIES HAIR COMB", "quantity", 1, "unit_price", 2.90, "line_total", 2.90)
+        ));
+
+        ChatResponse response = orchestrator.run("en son siparişimi göster", session, System.nanoTime());
+
+        assertEquals("SUCCESS", response.getStatus());
+        assertEquals(USER_LAST_ORDER_ITEMS_SQL, response.getGeneratedSql());
+        assertEquals(List.of(11L, 11L), queryExecutionService.lastArgs);
+        assertTrue(response.getFinalAnswer().contains("5.85"));
+        assertTrue(response.getFinalAnswer().contains("15 PINK FLUFFY CHICKS IN BOX"));
+        assertTrue(response.getFinalAnswer().contains("2 DAISIES HAIR COMB"));
     }
 
     @Test
@@ -272,6 +292,24 @@ class ChatGraphOrchestratorTest {
         assertEquals(List.of(11L), queryExecutionService.lastArgs);
         assertEquals(25.0, response.getRows().get(0).get("percentage_of_total_spent"));
         assertTrue(response.getFinalAnswer().contains("25"));
+    }
+
+    @Test
+    void individualLastProductsPercentageUsesLastOrderAgainstLastTenOrders() {
+        session = new ChatSession(true, "INDIVIDUAL", "demo@luime.com", 11L, null, "127.0.0.1");
+        useRealGeminiSqlService();
+        queryExecutionService.thenReturn(List.of(
+                Map.of("order_id", 1002, "last_order_amount", 2.70, "recent_orders_total", 99.15, "percentage_of_recent_orders", 2.72)
+        ));
+
+        ChatResponse response = orchestrator.run("en son aldığım ürünler son 10 alışverişimin yüzde kaçı", session, System.nanoTime());
+
+        assertEquals("SUCCESS", response.getStatus());
+        assertEquals(USER_LAST_ORDER_OF_RECENT_ORDERS_PERCENTAGE_SQL, response.getGeneratedSql());
+        assertEquals(List.of(11L, 11L, 11L), queryExecutionService.lastArgs);
+        assertEquals(2.72, response.getRows().get(0).get("percentage_of_recent_orders"));
+        assertTrue(response.getFinalAnswer().contains("Son siparişinizdeki ürünlerin toplamı 2.70 TL"));
+        assertTrue(response.getFinalAnswer().contains("son 10 alışverişinizin %2.72"));
     }
 
     @Test

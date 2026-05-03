@@ -38,8 +38,9 @@ class ChatServiceSellerIntentTest {
 
         assertEquals("SUCCESS", response.getStatus());
         assertTrue(response.getGeneratedSql().contains("ai_safe.seller_product_sales_summary"));
-        assertTrue(response.getGeneratedSql().contains("store_id = ?"));
-        assertEquals(List.of(77L), queryExecutionService.lastArgs);
+        assertTrue(response.getGeneratedSql().contains("store_id = 77"));
+        assertTrue(response.getGeneratedSql().contains("limit 5"));
+        assertEquals(List.of(77L, 5), queryExecutionService.lastArgs);
         assertEquals(3, response.getRows().size());
         assertTrue(response.getFinalAnswer().contains("Luna Vitamin C Serum"));
     }

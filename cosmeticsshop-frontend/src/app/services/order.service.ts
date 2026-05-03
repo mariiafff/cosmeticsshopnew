@@ -13,6 +13,7 @@ export interface Order {
   shipmentStatus?: string;
   paymentMethod?: string;
   createdAt?: string;
+  orderDate?: string;
   items?: OrderItem[];
 }
 

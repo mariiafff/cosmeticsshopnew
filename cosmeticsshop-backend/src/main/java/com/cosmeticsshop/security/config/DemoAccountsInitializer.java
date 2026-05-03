@@ -237,7 +237,7 @@ public class DemoAccountsInitializer {
         order.setShipmentStatus("DELIVERED");
         order.setSalesChannel("WEB");
         order.setShipServiceLevel("STANDARD");
-        LocalDateTime orderDate = LocalDateTime.now().withDayOfMonth(Math.min(10, LocalDateTime.now().toLocalDate().lengthOfMonth()));
+        LocalDateTime orderDate = LocalDateTime.now().minusDays(14);
         order.setCreatedAt(orderDate);
         order.setOrderDate(orderDate);
         order.setUpdatedAt(orderDate.plusDays(1));
@@ -311,7 +311,7 @@ public class DemoAccountsInitializer {
         order.setShipmentStatus("DELIVERED");
         order.setSalesChannel("WEB");
         order.setShipServiceLevel("STANDARD");
-        LocalDateTime orderDate = LocalDateTime.now();
+        LocalDateTime orderDate = LocalDateTime.now().minusDays(11);
         order.setCreatedAt(orderDate);
         order.setOrderDate(orderDate);
         order.setUpdatedAt(orderDate);
@@ -348,7 +348,7 @@ public class DemoAccountsInitializer {
         order.setShipmentStatus("DELIVERED");
         order.setSalesChannel("WEB");
         order.setShipServiceLevel("STANDARD");
-        LocalDateTime orderDate = LocalDateTime.now().withDayOfMonth(Math.min(12, LocalDateTime.now().toLocalDate().lengthOfMonth()));
+        LocalDateTime orderDate = LocalDateTime.now().minusDays(10);
         order.setCreatedAt(orderDate);
         order.setOrderDate(orderDate);
         order.setUpdatedAt(orderDate.plusDays(1));

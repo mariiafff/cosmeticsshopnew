@@ -10,6 +10,7 @@ import com.cosmeticsshop.security.dto.LoginRequest;
 import com.cosmeticsshop.security.dto.RegisterRequest;
 import com.cosmeticsshop.security.jwt.JwtUtil;
 import com.cosmeticsshop.security.service.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,11 +19,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.Locale;
 
 @RestController
@@ -35,6 +38,7 @@ public class AuthController {
     private final CustomerProfileRepository customerProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final String frontendUrl;
 
     public AuthController(
             AuthenticationManager authenticationManager,
@@ -42,7 +46,8 @@ public class AuthController {
             UserRepository userRepository,
             CustomerProfileRepository customerProfileRepository,
             PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil
+            JwtUtil jwtUtil,
+            @Value("${app.frontend.url:http://127.0.0.1:4200}") String frontendUrl
     ) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
@@ -50,6 +55,7 @@ public class AuthController {
         this.customerProfileRepository = customerProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.frontendUrl = frontendUrl;
     }
 
     @PostMapping("/login")
@@ -126,6 +132,13 @@ public class AuthController {
                 user.getEmail(),
                 user.getRole()
         ));
+    }
+
+    @GetMapping("/oauth2/failure")
+    public ResponseEntity<Void> oauth2Failure() {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/login?oauthError=true"))
+                .build();
     }
 
     private String normalizeEmail(String email) {

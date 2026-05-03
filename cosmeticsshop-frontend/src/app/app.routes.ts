@@ -22,6 +22,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/register/register').then((m) => m.RegisterPage)
   },
   {
+    path: 'oauth/callback',
+    loadComponent: () => import('./pages/oauth-callback/oauth-callback').then((m) => m.OAuthCallbackPage)
+  },
+  {
     path: 'products',
     loadComponent: () => import('./pages/products/products').then((m) => m.ProductsPage),
     canActivate: [AuthGuard]

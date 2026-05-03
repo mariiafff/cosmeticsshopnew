@@ -122,6 +122,11 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
             "remove store_id filter", "store_id filtresini kaldır", "all stores",
             "all registered stores", "platform-wide", "without where clause", "without filters",
             "global revenue", "total platform revenue", "all stores revenue", "system-wide analytics",
+            "other sellers", "other stores", "other sellers stores", "other seller stores",
+            "diğer satıcıların", "diger saticilarin", "başka satıcıların", "baska saticilarin",
+            "diğer mağazaların", "diger magazalarin", "başka mağazaların", "baska magazalarin",
+            "diğer satıcıların mağazaları", "diger saticilarin magazalari",
+            "diğer satıcıların mağazalarındaki", "diger saticilarin magazalarindaki",
             // Turkish terms for cross-user access (questions 31-34)
             "diğer kullanıcıların siparişleri", "başka müşterilerin siparişleri", "tüm kullanıcıların siparişleri",
             "başka müşterilerin alışverişleri", "tüm kullanıcıların siparişlerini listele",
@@ -134,8 +139,18 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
             "all user spending", "all customer data", "show me all users", "all customer info"
     );
 
-    private static final Pattern STORE_ID_PATTERN = Pattern.compile("\\bstore(?:\\s*id|\\s*#|\\s*number)?\\s*[=:#]{1,2}\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
-    private static final Pattern USER_ID_PATTERN = Pattern.compile("\\b(?:user|customer|id)\\s*[=:#]{1,2}\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern STORE_ID_PATTERN = Pattern.compile(
+            "\\b(?:store|store_id|magaza|mağaza)\\s*(?:id)?\\s*(?:[=:#-]\\s*)?(\\d+)(?:\\s*'?\\s*(?:in|ın|un|ün|nin|nın|nun|nün))?\\b",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
+    private static final Pattern SELLER_ID_PATTERN = Pattern.compile(
+            "\\b(?:seller|seller_id|satici|satıcı)\\s*(?:id)?\\s*(?:[=:#-]\\s*)?(\\d+)(?:\\s*'?\\s*(?:in|ın|un|ün|nin|nın|nun|nün))?\\b",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
+    private static final Pattern USER_ID_PATTERN = Pattern.compile(
+            "\\b(?:user|customer|user_id|customer_id|kullanici|kullanıcı|musteri|müşteri)\\s*(?:id)?\\s*(?:[=:#-]\\s*)?(\\d+)\\b",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
     private static final Pattern ORDER_ID_PATTERN = Pattern.compile("\\border(?:\\s*number|\\s*id)?\\s*[#:=-]?\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern ENUMERATION_PATTERN = Pattern.compile("\\b(?:1\\s+through\\s+200|001\\s+through\\s+500|order ids?\\s+\\d+\\s+through\\s+\\d+|store ids?\\s+\\d+\\s+through\\s+\\d+|sku-?\\d+\\s+through\\s+sku-?\\d+)\\b", Pattern.CASE_INSENSITIVE);
 
@@ -289,9 +304,8 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
 
     private GuardrailResult checkScope(ChatSession session, String normalized) {
         Matcher storeMatcher = STORE_ID_PATTERN.matcher(normalized);
-        if (storeMatcher.find()) {
+        if (storeMatcher.find() && isUnauthorizedStoreIdRequest(session, storeMatcher.group(1))) {
             String requestedStoreId = storeMatcher.group(1);
-            if (!"ADMIN".equals(session.role())) {
                 String safeAlternative = session.storeId() != null
                         ? "Yalnızca kendi mağazanız (#" + session.storeId() + ") için sorgulama yapabilirsiniz."
                         : "Yalnızca yetkili mağaza oturumları kendi mağaza verilerini sorgulayabilir.";
@@ -303,11 +317,26 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
                         "SQL üretimi durduruldu",
                         safeAlternative
                 );
-            }
+        }
+
+        Matcher sellerMatcher = SELLER_ID_PATTERN.matcher(normalized);
+        if (sellerMatcher.find() && isUnauthorizedSellerIdRequest(session, sellerMatcher.group(1))) {
+            String requestedSellerId = sellerMatcher.group(1);
+            String safeAlternative = session.storeId() != null
+                    ? "Yalnızca kendi mağazanız (#" + session.storeId() + ") için sorgulama yapabilirsiniz."
+                    : "Yalnızca yetkili satıcı oturumları kendi mağaza verilerini sorgulayabilir.";
+            return GuardrailResult.block(
+                    "Yetki Dışı Satıcı Erişimi",
+                    "HIGH",
+                    "İstenen seller: #" + requestedSellerId + " (yetkisiz)",
+                    "Cross-seller data access",
+                    "SQL üretimi durduruldu",
+                    safeAlternative
+            );
         }
 
         Matcher userMatcher = USER_ID_PATTERN.matcher(normalized);
-        if (userMatcher.find() && !"ADMIN".equals(session.role())) {
+        if (userMatcher.find() && isUnauthorizedUserIdRequest(session, userMatcher.group(1))) {
             return GuardrailResult.block(
                     "Yetki Dışı Kullanıcı Erişimi",
                     "HIGH",
@@ -397,8 +426,8 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
                 || normalized.contains("own store")
                 || normalized.contains("magazam")
                 || normalized.contains("mağazam")
-                || normalized.contains("magaza")
-                || normalized.contains("mağaza");
+                || normalized.contains("magazamdan")
+                || normalized.contains("mağazamdan");
     }
 
     private boolean isSellerAnalyticsQuestion(String normalized) {
@@ -427,6 +456,54 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
                 || normalized.contains("son alisveris")
                 || normalized.contains("siparişim")
                 || normalized.contains("siparisim");
+    }
+
+    private boolean isUnauthorizedUserIdRequest(ChatSession session, String requestedUserId) {
+        if ("ADMIN".equals(session.role())) {
+            return false;
+        }
+
+        if (session.userId() == null) {
+            return true;
+        }
+
+        try {
+            return !session.userId().equals(Long.parseLong(requestedUserId));
+        } catch (NumberFormatException ex) {
+            return true;
+        }
+    }
+
+    private boolean isUnauthorizedStoreIdRequest(ChatSession session, String requestedStoreId) {
+        if ("ADMIN".equals(session.role())) {
+            return false;
+        }
+
+        if (session.storeId() == null) {
+            return true;
+        }
+
+        try {
+            return !session.storeId().equals(Long.parseLong(requestedStoreId));
+        } catch (NumberFormatException ex) {
+            return true;
+        }
+    }
+
+    private boolean isUnauthorizedSellerIdRequest(ChatSession session, String requestedSellerId) {
+        if ("ADMIN".equals(session.role())) {
+            return false;
+        }
+
+        if (session.userId() == null || !"CORPORATE".equals(session.role())) {
+            return true;
+        }
+
+        try {
+            return !session.userId().equals(Long.parseLong(requestedSellerId));
+        } catch (NumberFormatException ex) {
+            return true;
+        }
     }
 
     private GuardrailResult checkEnumeration(String normalized) {

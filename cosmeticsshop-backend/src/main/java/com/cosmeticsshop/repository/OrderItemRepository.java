@@ -35,7 +35,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     @Query("""
             select new map(
-                coalesce(p.category.name, 'Uncategorized') as category,
+                coalesce(p.category.name, 'Diğer') as category,
                 sum(oi.quantity * oi.price) as revenue,
                 sum(oi.quantity) as units
             )

@@ -48,16 +48,18 @@ public class ProductController {
             @RequestParam(defaultValue = "24") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "name,asc") String sort
+            @RequestParam(defaultValue = "name,asc") String sort,
+            @RequestParam(required = false) Long categoryId
     ) {
         String effectiveSearch = (search == null || search.isBlank()) ? q : search;
-        Page<ProductResponseDto> products = productService.getProductResponsePage(page, size, effectiveSearch, sort, false);
+        Page<ProductResponseDto> products = productService.getProductResponsePage(page, size, effectiveSearch, sort, false, categoryId);
         log.info(
-                "Returning {} products from /api/products page={} size={} total={}",
+                "Returning {} products from /api/products page={} size={} total={} categoryId={}",
                 products.getNumberOfElements(),
                 products.getNumber(),
                 products.getSize(),
-                products.getTotalElements()
+                products.getTotalElements(),
+                categoryId
         );
         return products;
     }
@@ -69,7 +71,8 @@ public class ProductController {
             @RequestParam(defaultValue = "24") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "name,asc") String sort
+            @RequestParam(defaultValue = "name,asc") String sort,
+            @RequestParam(required = false) Long categoryId
     ) {
         String effectiveSearch = (search == null || search.isBlank()) ? q : search;
         User currentUser = getCurrentUser();
@@ -77,9 +80,9 @@ public class ProductController {
             List<Long> storeIds = storeService.getStoresByOwnerUserId(currentUser.getId()).stream()
                     .map(Store::getId)
                     .toList();
-            return productService.getProductResponsePageForStores(page, size, effectiveSearch, sort, true, storeIds);
+            return productService.getProductResponsePageForStores(page, size, effectiveSearch, sort, true, storeIds, categoryId);
         }
-        return productService.getProductResponsePage(page, size, effectiveSearch, sort, true);
+        return productService.getProductResponsePage(page, size, effectiveSearch, sort, true, categoryId);
     }
 
     @GetMapping("/{id}")

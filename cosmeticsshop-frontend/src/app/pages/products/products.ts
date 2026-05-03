@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { Product, ProductsPage as ProductsPageResponse, ProductsService } from '../../services/products.service';
 import { AuthService } from '../../services/auth.service';
 import { CartService } from '../../services/cart.service';
+import { Category, CategoriesService } from '../../services/categories.service';
 
 @Component({
   selector: 'app-products-page',
@@ -19,11 +20,13 @@ export class ProductsPage implements OnInit {
   protected readonly fallbackImage = 'https://via.placeholder.com/300';
 
   private readonly productsService = inject(ProductsService);
+  private readonly categoriesService = inject(CategoriesService);
   private readonly authService = inject(AuthService);
   private readonly cartService = inject(CartService);
   private toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly products = signal<Product[]>([]);
+  protected readonly categories = signal<Category[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly isLoadingMore = signal(false);
   protected readonly errorMessage = signal('');
@@ -36,27 +39,22 @@ export class ProductsPage implements OnInit {
   protected stockFilter = 'ALL';
   protected sortMode = 'name';
   protected readonly role = signal(this.authService.getRole() ?? 'GUEST');
-  protected readonly categories = computed(() => {
-    const values = this.products()
-      .map((product) => product.category?.name)
-      .filter((name): name is string => !!name);
-    return Array.from(new Set(values)).sort();
-  });
   protected readonly filteredProducts = computed(() => {
     const products = this.products().filter((product) => {
-      const matchesCategory =
-        this.categoryFilter === 'ALL' || product.category?.name === this.categoryFilter;
       const stock = product.stockQuantity ?? 0;
       const matchesStock =
         this.stockFilter === 'ALL' ||
         (this.stockFilter === 'LOW' && stock <= 5) ||
         (this.stockFilter === 'AVAILABLE' && stock > 5);
-      return matchesCategory && matchesStock;
+      return matchesStock;
     });
 
     return products.sort((first, second) => {
-      if (this.sortMode === 'price') {
+      if (this.sortMode === 'priceAsc') {
         return (first.price ?? 0) - (second.price ?? 0);
+      }
+      if (this.sortMode === 'priceDesc') {
+        return (second.price ?? 0) - (first.price ?? 0);
       }
       if (this.sortMode === 'stock') {
         return (second.stockQuantity ?? 0) - (first.stockQuantity ?? 0);
@@ -77,6 +75,7 @@ export class ProductsPage implements OnInit {
   protected readonly loadedCount = computed(() => this.products().length);
 
   ngOnInit(): void {
+    this.loadCategories();
     this.loadProducts();
   }
 
@@ -94,7 +93,8 @@ export class ProductsPage implements OnInit {
       page: nextPage,
       size: ProductsPage.PAGE_SIZE,
       search: this.searchQuery,
-      sort: this.resolveSort()
+      sort: this.resolveSort(),
+      categoryId: this.resolveCategoryId()
     }).subscribe({
       next: (response) => {
         console.log('Products API response:', response);
@@ -112,6 +112,10 @@ export class ProductsPage implements OnInit {
   }
 
   protected applySort(): void {
+    this.loadProducts();
+  }
+
+  protected applyCategoryFilter(): void {
     this.loadProducts();
   }
 
@@ -160,13 +164,36 @@ export class ProductsPage implements OnInit {
   }
 
   private resolveSort(): string {
-    if (this.sortMode === 'price') {
+    if (this.sortMode === 'priceAsc') {
       return 'price,asc';
+    }
+    if (this.sortMode === 'priceDesc') {
+      return 'price,desc';
     }
     if (this.sortMode === 'stock') {
       return 'stock,desc';
     }
     return 'name,asc';
+  }
+
+  private resolveCategoryId(): number | undefined {
+    if (this.categoryFilter === 'ALL') {
+      return undefined;
+    }
+
+    const categoryId = Number(this.categoryFilter);
+    return Number.isFinite(categoryId) ? categoryId : undefined;
+  }
+
+  private loadCategories(): void {
+    this.categoriesService.getCategories().subscribe({
+      next: (categories) => {
+        this.categories.set([...categories].sort((first, second) => first.name.localeCompare(second.name)));
+      },
+      error: () => {
+        this.categories.set([]);
+      }
+    });
   }
 
   private showToast(message: string): void {

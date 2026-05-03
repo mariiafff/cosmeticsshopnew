@@ -72,7 +72,7 @@ public class ChatService {
             where store_id = ?
               and total_quantity > 0
             order by total_sold desc
-            limit 5
+            limit ?
             """;
     private static final String TOP_PRODUCTS_GLOBAL_SQL = """
             select
@@ -83,11 +83,11 @@ public class ChatService {
             join orders o on o.id = oi.order_id
             group by p.id, p.name
             order by total_sold desc
-            limit 5
+            limit ?
             """;
     private static final String CURRENT_MONTH_CUSTOMER_TOP_CATEGORY_SQL = """
             select
-                coalesce(c.name, concat('Kategori ', p.category_id), 'Kategorisiz') as category_name,
+                coalesce(c.name, concat('Kategori ', p.category_id), 'Diğer') as category_name,
                 p.category_id,
                 sum(oi.quantity * oi.unit_price) as total_spent
             from order_items oi
@@ -133,7 +133,7 @@ public class ChatService {
                 case
                     when c.name is not null then c.name
                     when p.category_id is not null then concat('Kategori ', p.category_id)
-                    else 'Kategorisiz'
+                    else 'Diğer'
                 end as category_name,
                 p.category_id,
                 count(*) as product_count
@@ -150,7 +150,7 @@ public class ChatService {
                       limit 1
                   )
                 order by oi.id desc
-                limit 5
+                limit ?
             ) recent_items
             join products p on p.id = recent_items.product_id
             left join categories c on c.id = p.category_id
@@ -384,6 +384,8 @@ public class ChatService {
                         || normalized.contains("best selling")
                         || normalized.contains("top 5 urun")
                         || normalized.contains("top urun")
+                        || normalized.matches(".*\\btop\\s+\\d{1,3}\\s+urun\\b.*")
+                        || normalized.matches(".*\\btop\\s+\\d{1,3}\\s+products?\\b.*")
                         || normalized.contains("magazamda en cok satan");
         boolean asksProduct = normalized.contains("urun") || normalized.contains("product");
         return asksTopSelling && asksProduct;
@@ -431,6 +433,8 @@ public class ChatService {
         boolean asksReviewOrRating =
                 normalized.contains("yorumlanmis")
                         || normalized.contains("puanlanmis")
+                        || normalized.contains("puanli")
+                        || normalized.contains("puan")
                         || normalized.contains("rating")
                         || normalized.contains("reviewed")
                         || normalized.contains("rated");
@@ -482,17 +486,21 @@ public class ChatService {
             );
         }
 
+        int requestedLimit = extractRequestedLimit(question, 5);
         String sql = isCorporate ? TOP_PRODUCTS_BY_STORE_SQL : TOP_PRODUCTS_GLOBAL_SQL;
         List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
                 isCorporate
-                        ? queryExecutionService.executeQuery(sql, session.storeId())
-                        : queryExecutionService.executeQuery(sql)
+                        ? queryExecutionService.executeQuery(sql, session.storeId(), requestedLimit)
+                        : queryExecutionService.executeQuery(sql, requestedLimit)
         );
         VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+        String displaySql = isCorporate
+                ? sql.replaceFirst("\\?", String.valueOf(session.storeId())).replaceFirst("\\?", String.valueOf(requestedLimit))
+                : sql.replaceFirst("\\?", String.valueOf(requestedLimit));
 
         return new ChatResponse(
                 chatAnalysisService.escapeHtml(question),
-                chatAnalysisService.escapeHtml(sql),
+                chatAnalysisService.escapeHtml(displaySql),
                 rows,
                 "Top-selling products query executed successfully.",
                 elapsedMs(startTime),
@@ -501,20 +509,22 @@ public class ChatService {
                 null,
                 null,
                 buildSessionDetails(session),
-                chatAnalysisService.escapeHtml(buildTopProductsAnswer(rows, isCorporate)),
+                chatAnalysisService.escapeHtml(buildTopProductsAnswer(rows, isCorporate, requestedLimit)),
                 visualization.visualizationType(),
                 visualization.chartData(),
                 PIPELINE_STEPS
         );
     }
 
-    private String buildTopProductsAnswer(List<Map<String, Object>> rows, boolean scopedToStore) {
+    private String buildTopProductsAnswer(List<Map<String, Object>> rows, boolean scopedToStore, int requestedLimit) {
         if (rows == null || rows.isEmpty()) {
             return "Satış verisi bulunamadı.";
         }
 
         StringBuilder answer = new StringBuilder();
-        answer.append(scopedToStore ? "Mağazanızın en çok satan 5 ürünü:" : "En çok satan 5 ürün:");
+        answer.append(scopedToStore ? "Mağazanızın en çok satan " : "En çok satan ")
+                .append(requestedLimit)
+                .append(" ürünü:");
 
         for (int index = 0; index < rows.size(); index++) {
             Map<String, Object> row = rows.get(index);
@@ -772,14 +782,18 @@ public class ChatService {
             );
         }
 
+        int requestedLimit = extractRequestedLimit(question, 5);
         List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
-                queryExecutionService.executeQuery(LAST_PRODUCTS_CATEGORY_DISTRIBUTION_SQL, session.userId(), session.userId())
+                queryExecutionService.executeQuery(LAST_PRODUCTS_CATEGORY_DISTRIBUTION_SQL, session.userId(), session.userId(), requestedLimit)
         );
         VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+        String displaySql = LAST_PRODUCTS_CATEGORY_DISTRIBUTION_SQL.replaceFirst("\\?", String.valueOf(session.userId()))
+                .replaceFirst("\\?", String.valueOf(session.userId()))
+                .replaceFirst("\\?", String.valueOf(requestedLimit));
 
         return new ChatResponse(
                 chatAnalysisService.escapeHtml(question),
-                chatAnalysisService.escapeHtml(LAST_PRODUCTS_CATEGORY_DISTRIBUTION_SQL),
+                chatAnalysisService.escapeHtml(displaySql),
                 rows,
                 "Last purchased products category distribution query executed successfully.",
                 elapsedMs(startTime),
@@ -788,21 +802,23 @@ public class ChatService {
                 null,
                 null,
                 buildSessionDetails(session),
-                chatAnalysisService.escapeHtml(buildLastProductsCategoryDistributionAnswer(rows, session.userId())),
+                chatAnalysisService.escapeHtml(buildLastProductsCategoryDistributionAnswer(rows, session.userId(), requestedLimit)),
                 visualization.visualizationType(),
                 visualization.chartData(),
                 PIPELINE_STEPS
         );
     }
 
-    private String buildLastProductsCategoryDistributionAnswer(List<Map<String, Object>> rows, Long userId) {
+    private String buildLastProductsCategoryDistributionAnswer(List<Map<String, Object>> rows, Long userId, int requestedLimit) {
         if (rows == null || rows.isEmpty()) {
             return hasAnyOrder(userId)
-                    ? "Son siparişinizde ürün bulunamadı."
+                    ? "Son " + requestedLimit + " ürün için kategori verisi bulunamadı."
                     : "Henüz alışveriş veriniz bulunamadı.";
         }
 
-        StringBuilder answer = new StringBuilder("Son alışverişinizdeki ürünlerin kategori dağılımı:");
+        StringBuilder answer = new StringBuilder("Son ")
+                .append(requestedLimit)
+                .append(" ürününüzün kategori dağılımı:");
         for (Map<String, Object> row : rows) {
             Object categoryName = row.get("category_name");
             if (categoryName == null || String.valueOf(categoryName).isBlank()) {

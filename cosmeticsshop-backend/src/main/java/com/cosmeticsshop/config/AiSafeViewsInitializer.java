@@ -112,7 +112,7 @@ public class AiSafeViewsInitializer {
                 select
                     o.id as order_id,
                     o.user_id as customer_id,
-                    coalesce(o.order_date, o.created_at) as order_date,
+                    coalesce(o.created_at, o.order_date) as order_date,
                     coalesce(o.normalized_grand_total_usd, o.grand_total, 0) as total_amount
                 from public.orders o
                 where lower(coalesce(o.status, '')) in ('delivered', 'completed', 'paid', 'placed')
@@ -127,7 +127,7 @@ public class AiSafeViewsInitializer {
                     p.id as product_id,
                     p.name as product_name,
                     p.category_id,
-                    c.name as category_name,
+                    coalesce(c.name, cast('Diğer' as varchar(100))) as category_name,
                     oi.quantity,
                     oi.unit_price,
                     (oi.quantity * oi.unit_price) as line_total

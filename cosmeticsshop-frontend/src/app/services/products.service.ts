@@ -58,6 +58,7 @@ export interface ProductsQuery {
   size?: number;
   search?: string;
   sort?: string;
+  categoryId?: number;
 }
 
 export interface ProductsPage {
@@ -103,6 +104,9 @@ export class ProductsService {
     }
     if (query.sort?.trim()) {
       params = params.set('sort', query.sort.trim());
+    }
+    if (query.categoryId !== undefined) {
+      params = params.set('categoryId', query.categoryId);
     }
 
     return this.http.get<ProductsPageApi>(this.apiUrl, { params }).pipe(

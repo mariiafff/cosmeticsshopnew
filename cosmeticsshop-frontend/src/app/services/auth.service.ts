@@ -50,6 +50,8 @@ export class AuthService {
   private readonly apiUrl = `${environment.apiBaseUrl}/auth`;
   private readonly tokenKey = 'auth_token';
   private readonly refreshTokenKey = 'refresh_token';
+  private readonly userEmailKey = 'auth_user_email';
+  private readonly userRoleKey = 'auth_user_role';
   private readonly checkoutAuthTokenKey = 'luime_checkout_auth_token';
   private readonly checkoutRefreshTokenKey = 'luime_checkout_refresh_token';
   private readonly tokenSignal = signal<string | null>(this.readToken());
@@ -79,6 +81,10 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, normalizedPayload);
   }
 
+  completeOAuthLogin(response: AuthResponse): void {
+    this.saveOAuthAuth(response);
+  }
+
   logout(): void {
     this.clearAuth();
   }
@@ -102,7 +108,7 @@ export class AuthService {
     }
 
     const payload = this.decodeJwt(token);
-    const email = this.extractEmailFromPayload(payload);
+    const email = this.extractEmailFromPayload(payload) ?? this.readStoredUserValue(this.userEmailKey);
     if (!email) {
       this.clearAuth();
       return null;
@@ -117,7 +123,7 @@ export class AuthService {
     return {
       email,
       name: this.extractNameFromPayload(payload),
-      role: this.extractRoleFromPayload(payload)
+      role: this.extractRoleFromPayload(payload) ?? this.readStoredUserValue(this.userRoleKey)
     };
   }
 
@@ -136,7 +142,7 @@ export class AuthService {
   }
 
   private saveAuth(response: AuthResponse): void {
-    if (!response.token || !this.isValidToken(response.token)) {
+    if (!response.token || !this.isUsableToken(response.token)) {
       this.clearAuth();
       return;
     }
@@ -149,7 +155,46 @@ export class AuthService {
     if (response.refreshToken) {
       localStorage.setItem(this.refreshTokenKey, response.refreshToken);
     }
+    const payload = this.decodeJwt(response.token);
+    const email = response.email ?? this.extractEmailFromPayload(payload);
+    const role = response.role ?? this.extractRoleFromPayload(payload);
+    if (email) {
+      localStorage.setItem(this.userEmailKey, email);
+    }
+    if (role) {
+      localStorage.setItem(this.userRoleKey, role);
+    }
     this.tokenSignal.set(response.token);
+  }
+
+  private saveOAuthAuth(response: AuthResponse): void {
+    const token = response.token?.trim();
+    if (!token) {
+      this.clearAuth();
+      return;
+    }
+
+    const payload = this.decodeJwt(token);
+    const email = response.email?.trim() || this.extractEmailFromPayload(payload);
+    const role = this.normalizeRole(response.role) ?? this.normalizeRole(this.extractRoleFromPayload(payload));
+
+    if (!email) {
+      this.clearAuth();
+      return;
+    }
+
+    if (this.hasBrowserStorage()) {
+      localStorage.setItem(this.tokenKey, token);
+      if (response.refreshToken?.trim()) {
+        localStorage.setItem(this.refreshTokenKey, response.refreshToken.trim());
+      }
+      localStorage.setItem(this.userEmailKey, email);
+      if (role) {
+        localStorage.setItem(this.userRoleKey, role);
+      }
+    }
+
+    this.tokenSignal.set(token);
   }
 
   private hasBrowserStorage(): boolean {
@@ -158,7 +203,7 @@ export class AuthService {
 
   private ensureTokenAvailable(): string | null {
     const currentToken = this.tokenSignal();
-    if (currentToken && this.isValidToken(currentToken)) {
+    if (currentToken && this.isUsableToken(currentToken)) {
       return currentToken;
     }
 
@@ -181,7 +226,7 @@ export class AuthService {
     }
 
     let token = localStorage.getItem(this.tokenKey);
-    if (token && !this.isValidToken(token)) {
+    if (token && !this.isUsableToken(token)) {
       this.clearAuth();
       token = null;
     }
@@ -199,7 +244,7 @@ export class AuthService {
     }
 
     const token = sessionStorage.getItem(this.checkoutAuthTokenKey);
-    if (!token || !this.isValidToken(token)) {
+    if (!token || !this.isUsableToken(token)) {
       return null;
     }
 
@@ -227,10 +272,10 @@ export class AuthService {
     const roleClaim = payload.role ?? payload.roles;
 
     if (Array.isArray(roleClaim)) {
-      return roleClaim.length ? String(roleClaim[0]) : null;
+      return roleClaim.length ? this.normalizeRole(String(roleClaim[0])) : null;
     }
 
-    return roleClaim ? String(roleClaim) : null;
+    return roleClaim ? this.normalizeRole(String(roleClaim)) : null;
   }
 
   private extractNameFromPayload(payload: JwtPayload): string | null {
@@ -248,9 +293,12 @@ export class AuthService {
   }
 
   private isValidToken(token: string): boolean {
+    return this.isUsableToken(token);
+  }
+
+  private isUsableToken(token: string): boolean {
     const payload = this.decodeJwt(token);
-    const email = this.extractEmailFromPayload(payload);
-    if (!email) {
+    if (Object.keys(payload).length === 0) {
       return false;
     }
 
@@ -268,14 +316,15 @@ export class AuthService {
     }
 
     try {
-      const payloadJson = atob(this.padBase64(parts[1]));
+      const payloadJson = atob(this.toBase64(parts[1]));
       return JSON.parse(payloadJson) as JwtPayload;
     } catch {
       return {};
     }
   }
 
-  private padBase64(base64: string): string {
+  private toBase64(base64Url: string): string {
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const padding = 4 - (base64.length % 4);
     return padding < 4 ? `${base64}${'='.repeat(padding)}` : base64;
   }
@@ -284,7 +333,27 @@ export class AuthService {
     if (this.hasBrowserStorage()) {
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.refreshTokenKey);
+      localStorage.removeItem(this.userEmailKey);
+      localStorage.removeItem(this.userRoleKey);
     }
     this.tokenSignal.set(null);
+  }
+
+  private readStoredUserValue(key: string): string | null {
+    if (!this.hasBrowserStorage()) {
+      return null;
+    }
+
+    const value = localStorage.getItem(key);
+    return value?.trim() || null;
+  }
+
+  private normalizeRole(role: string | null | undefined): string | null {
+    const normalized = role?.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    return normalized.replace(/^ROLE_/i, '').toUpperCase();
   }
 }

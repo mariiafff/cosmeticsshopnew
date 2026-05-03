@@ -29,10 +29,10 @@
       <div class="products-filters" aria-label="Product filters">
         <label>
           <span>Category</span>
-          <select [(ngModel)]="categoryFilter">
+          <select [(ngModel)]="categoryFilter" (ngModelChange)="applyCategoryFilter()">
             <option value="ALL">All categories</option>
-            @for (category of categories(); track category) {
-              <option [value]="category">{{ category }}</option>
+            @for (category of categories(); track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
             }
           </select>
         </label>
@@ -50,7 +50,8 @@
           <span>Sort</span>
           <select [(ngModel)]="sortMode" (ngModelChange)="applySort()">
             <option value="name">Name</option>
-            <option value="price">Price</option>
+            <option value="priceAsc">Price: low to high</option>
+            <option value="priceDesc">Price: high to low</option>
             <option value="stock">Stock</option>
           </select>
         </label>
