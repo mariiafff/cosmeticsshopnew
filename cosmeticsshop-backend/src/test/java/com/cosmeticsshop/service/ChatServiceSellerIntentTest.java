@@ -29,7 +29,10 @@ class ChatServiceSellerIntentTest {
                 new ChatRateLimitService(),
                 chatAnalysisService,
                 null,
-                new DisabledPythonAiChatClient(chatAnalysisService)
+                new DisabledPythonAiChatClient(chatAnalysisService),
+                null,
+                null,
+                null
         );
         ChatRequest request = new ChatRequest();
         request.setQuestion("Top selling products");
@@ -43,6 +46,38 @@ class ChatServiceSellerIntentTest {
         assertEquals(List.of(77L, 5), queryExecutionService.lastArgs);
         assertEquals(3, response.getRows().size());
         assertTrue(response.getFinalAnswer().contains("Luna Vitamin C Serum"));
+    }
+
+    @Test
+    void latestOrderedProductsReturnsProductRowsNotOrderRows() {
+        FakeQueryExecutionService queryExecutionService = new FakeQueryExecutionService(List.of(
+                Map.of("product_name", "Luna Vitamin C Serum", "order_id", 16420, "order_date", "2026-05-12", "quantity", 1, "unit_price", 34.9, "line_total", 34.9),
+                Map.of("product_name", "Luna Barrier Repair Cream", "order_id", 16420, "order_date", "2026-05-12", "quantity", 2, "unit_price", 42.5, "line_total", 85.0)
+        ));
+        ChatAnalysisService chatAnalysisService = new ChatAnalysisService();
+        ChatService chatService = new ChatService(
+                queryExecutionService,
+                new GuardrailsService(),
+                new FixedChatSessionService(new ChatSession(true, "CORPORATE", "seller@test.com", 42L, 77L, "127.0.0.1")),
+                new ChatRateLimitService(),
+                chatAnalysisService,
+                null,
+                new DisabledPythonAiChatClient(chatAnalysisService),
+                null,
+                null,
+                null
+        );
+        ChatRequest request = new ChatRequest();
+        request.setQuestion("mağazamdaki en son sipariş edilen ürünleri göster");
+
+        ChatResponse response = chatService.ask(request);
+
+        assertEquals("SUCCESS", response.getStatus());
+        assertTrue(response.getGeneratedSql().contains("ai_safe.seller_recent_sold_products"));
+        assertTrue(response.getGeneratedSql().contains("product_name"));
+        assertEquals(List.of(77L, 10), queryExecutionService.lastArgs);
+        assertEquals(2, response.getRows().size());
+        assertTrue(response.getFinalAnswer().contains("sipariş #16420"));
     }
 
     private static class FixedChatSessionService extends ChatSessionService {

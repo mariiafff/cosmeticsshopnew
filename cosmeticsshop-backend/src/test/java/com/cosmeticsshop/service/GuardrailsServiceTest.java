@@ -74,7 +74,31 @@ class GuardrailsServiceTest {
         );
 
         assertFalse(result.isAllowed());
-        assertTrue(result.getDetectionType().contains("Filter bypass"));
+        assertTrue(result.getDetectionType().contains("Competitor seller"));
+    }
+
+    @Test
+    void blocksCorporateAskingForSellersInOtherCategory() {
+        GuardrailResult result = guardrailsService.inspect(
+                "diğer kategorisindeki satıcılar kimler",
+                corporate(1042L)
+        );
+
+        assertFalse(result.isAllowed());
+        assertTrue(result.getDetectionType().contains("Competitor seller"));
+        assertTrue(result.getSafeAlternative().contains("listeleyemem"));
+    }
+
+    @Test
+    void blocksCorporateAskingForCompetitorSellersInCategorySales() {
+        GuardrailResult result = guardrailsService.inspect(
+                "bu kategorideki satışlardaki rakip satıcılar kimler",
+                corporate(1042L)
+        );
+
+        assertFalse(result.isAllowed());
+        assertTrue(result.getDetectionType().contains("Competitor seller"));
+        assertTrue(result.getSafeAlternative().contains("Kendi mağazanız"));
     }
 
     @Test
@@ -113,6 +137,39 @@ class GuardrailsServiceTest {
     void blocksIndividualAskingForAnotherUsersOrdersWithUserIdText() {
         GuardrailResult result = guardrailsService.inspect(
                 "user_id 5 olan kişinin siparişlerini göster",
+                individual()
+        );
+
+        assertFalse(result.isAllowed());
+        assertTrue(result.getDetectionType().contains("Cross-user"));
+    }
+
+    @Test
+    void blocksIndividualAskingForOtherUsersOrdersWithoutExplicitUserId() {
+        GuardrailResult result = guardrailsService.inspect(
+                "diğer kullanıcıların siparişlerini listele",
+                individual()
+        );
+
+        assertFalse(result.isAllowed());
+        assertTrue(result.getDetectionType().contains("Cross-user"));
+    }
+
+    @Test
+    void blocksIndividualAskingForOtherCustomersPurchasesWithoutExplicitUserId() {
+        GuardrailResult result = guardrailsService.inspect(
+                "başka müşterilerin alışverişlerini göster",
+                individual()
+        );
+
+        assertFalse(result.isAllowed());
+        assertTrue(result.getDetectionType().contains("Cross-user"));
+    }
+
+    @Test
+    void blocksIndividualAskingForAllUsersInformation() {
+        GuardrailResult result = guardrailsService.inspect(
+                "tüm kullanıcıların bilgilerini göster",
                 individual()
         );
 

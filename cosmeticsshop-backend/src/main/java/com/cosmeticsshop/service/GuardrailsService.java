@@ -255,6 +255,28 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
             }
         }
 
+        if (isCrossUserPrivateDataQuestion(normalized)) {
+            return GuardrailResult.block(
+                    "Yetki Dışı Kullanıcı Verisi",
+                    "HIGH",
+                    "Başka kullanıcıların sipariş, alışveriş veya iletişim gibi özel verileri listelenemez.",
+                    "Cross-user private data access",
+                    "SQL üretimi durduruldu",
+                    "Yalnızca kendi siparişlerinizi veya güvenli genel özet metrikleri sorabilirsiniz."
+            );
+        }
+
+        if (isCompetitorSellerListingQuestion(normalized)) {
+            return GuardrailResult.block(
+                    "Rakip Satıcı Listeleme Desteklenmiyor",
+                    "HIGH",
+                    "Bu soru rakip/diğer satıcıların kimlik veya mağaza bilgilerini listelemeyi istiyor. Mevcut güvenli ai_safe view katmanı bu veriyi paylaşmaz.",
+                    "Competitor seller listing unavailable",
+                    "SQL üretimi durduruldu",
+                    "Rakip veya diğer satıcı isimlerini listeleyemem. Kendi mağazanız için kategori satış dağılımı, toplam gelir, en çok satan ürünler veya yorum/puan metriklerini sorabilirsiniz."
+            );
+        }
+
         for (String term : FILTER_BYPASS_TERMS) {
             if (normalized.contains(term)) {
                 String safeAlternative = "ADMIN".equals(session.role())
@@ -456,6 +478,83 @@ private static final List<String> FILTER_BYPASS_TERMS = List.of(
                 || normalized.contains("son alisveris")
                 || normalized.contains("siparişim")
                 || normalized.contains("siparisim");
+    }
+
+    private boolean isCompetitorSellerListingQuestion(String normalized) {
+        boolean mentionsSeller = normalized.contains("seller")
+                || normalized.contains("satıcı")
+                || normalized.contains("satici")
+                || normalized.contains("satıcılar")
+                || normalized.contains("saticilar");
+        boolean asksIdentity = normalized.contains("kim")
+                || normalized.contains("who")
+                || normalized.contains("list")
+                || normalized.contains("listele")
+                || normalized.contains("göster")
+                || normalized.contains("goster");
+        boolean competitorContext = normalized.contains("rakip")
+                || normalized.contains("competitor")
+                || normalized.contains("diğer")
+                || normalized.contains("diger")
+                || normalized.contains("başka")
+                || normalized.contains("baska")
+                || normalized.contains("bu kategoride")
+                || normalized.contains("kategorideki")
+                || normalized.contains("kategorisindeki")
+                || normalized.contains("category");
+
+        return mentionsSeller && asksIdentity && competitorContext;
+    }
+
+    private boolean isCrossUserPrivateDataQuestion(String normalized) {
+        boolean otherUserContext = normalized.contains("diğer kullanıcı")
+                || normalized.contains("diger kullanici")
+                || normalized.contains("başka kullanıcı")
+                || normalized.contains("baska kullanici")
+                || normalized.contains("diğer müşteri")
+                || normalized.contains("diger musteri")
+                || normalized.contains("başka müşteri")
+                || normalized.contains("baska musteri")
+                || normalized.contains("başkalarının")
+                || normalized.contains("baskalarinin")
+                || normalized.contains("tüm kullanıcı")
+                || normalized.contains("tum kullanici")
+                || normalized.contains("tüm müşteri")
+                || normalized.contains("tum musteri")
+                || normalized.contains("all users")
+                || normalized.contains("all customers")
+                || normalized.contains("other users")
+                || normalized.contains("other customers");
+        boolean privateData = normalized.contains("sipariş")
+                || normalized.contains("siparis")
+                || normalized.contains("alışveriş")
+                || normalized.contains("alisveris")
+                || normalized.contains("order")
+                || normalized.contains("purchase")
+                || normalized.contains("harcama")
+                || normalized.contains("spending")
+                || normalized.contains("email")
+                || normalized.contains("e-posta")
+                || normalized.contains("telefon")
+                || normalized.contains("phone")
+                || normalized.contains("adres")
+                || normalized.contains("address")
+                || normalized.contains("bilgi")
+                || normalized.contains("information")
+                || normalized.contains("profile")
+                || normalized.contains("profil")
+                || normalized.contains("account")
+                || normalized.contains("hesap");
+        boolean asksToReveal = normalized.contains("listele")
+                || normalized.contains("list")
+                || normalized.contains("göster")
+                || normalized.contains("goster")
+                || normalized.contains("getir")
+                || normalized.contains("ver")
+                || normalized.contains("show")
+                || normalized.contains("kim");
+
+        return otherUserContext && privateData && asksToReveal;
     }
 
     private boolean isUnauthorizedUserIdRequest(ChatSession session, String requestedUserId) {

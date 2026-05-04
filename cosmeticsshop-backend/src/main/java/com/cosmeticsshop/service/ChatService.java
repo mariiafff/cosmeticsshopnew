@@ -3,6 +3,12 @@ package com.cosmeticsshop.service;
 import com.cosmeticsshop.dto.ChatRequest;
 import com.cosmeticsshop.dto.ChatResponse;
 import com.cosmeticsshop.dto.GuardrailResult;
+import com.cosmeticsshop.model.Product;
+import com.cosmeticsshop.model.Review;
+import com.cosmeticsshop.model.User;
+import com.cosmeticsshop.repository.ProductRepository;
+import com.cosmeticsshop.repository.ReviewRepository;
+import com.cosmeticsshop.repository.UserRepository;
 import com.cosmeticsshop.service.ChatAnalysisService.VisualizationPayload;
 import com.cosmeticsshop.service.ChatSessionService.ChatSession;
 import com.cosmeticsshop.service.chatgraph.ChatGraphOrchestrator;
@@ -17,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -83,6 +90,19 @@ public class ChatService {
             join orders o on o.id = oi.order_id
             group by p.id, p.name
             order by total_sold desc
+            limit ?
+            """;
+    private static final String LATEST_SELLER_ORDERED_PRODUCTS_SQL = """
+            select
+                product_name,
+                order_id,
+                order_date,
+                quantity,
+                unit_price,
+                quantity * unit_price as line_total
+            from ai_safe.seller_recent_sold_products
+            where store_id = ?
+            order by order_date desc, order_id desc
             limit ?
             """;
     private static final String CURRENT_MONTH_CUSTOMER_TOP_CATEGORY_SQL = """
@@ -220,6 +240,9 @@ public class ChatService {
     private final ChatAnalysisService chatAnalysisService;
     private final ChatGraphOrchestrator chatGraphOrchestrator;
     private final PythonAiChatClient pythonAiChatClient;
+    private final ProductRepository productRepository;
+    private final ReviewRepository reviewRepository;
+    private final UserRepository userRepository;
 
     public ChatService(
             QueryExecutionService queryExecutionService,
@@ -228,7 +251,10 @@ public class ChatService {
             ChatRateLimitService chatRateLimitService,
             ChatAnalysisService chatAnalysisService,
             ChatGraphOrchestrator chatGraphOrchestrator,
-            PythonAiChatClient pythonAiChatClient
+            PythonAiChatClient pythonAiChatClient,
+            ProductRepository productRepository,
+            ReviewRepository reviewRepository,
+            UserRepository userRepository
     ) {
         this.queryExecutionService = queryExecutionService;
         this.guardrailsService = guardrailsService;
@@ -237,6 +263,9 @@ public class ChatService {
         this.chatAnalysisService = chatAnalysisService;
         this.chatGraphOrchestrator = chatGraphOrchestrator;
         this.pythonAiChatClient = pythonAiChatClient;
+        this.productRepository = productRepository;
+        this.reviewRepository = reviewRepository;
+        this.userRepository = userRepository;
     }
 
     public ChatResponse ask(ChatRequest request) {
@@ -265,6 +294,11 @@ public class ChatService {
             );
         }
 
+        Optional<ChatResponse> reviewMutationResponse = answerReviewMutationIntent(question, session, startTime);
+        if (reviewMutationResponse.isPresent()) {
+            return reviewMutationResponse.get();
+        }
+
         GuardrailResult guardrailResult = guardrailsService.inspect(question, session);
         if ("GREETING".equals(guardrailResult.getCategory())) {
             return new ChatResponse(
@@ -291,6 +325,10 @@ public class ChatService {
 
         if (isCurrentMonthTopProductsIntent(question)) {
             return answerCurrentMonthTopProducts(question, session, startTime);
+        }
+
+        if (isLatestSellerOrderedProductsIntent(question)) {
+            return answerLatestSellerOrderedProducts(question, session, startTime);
         }
 
         if (isLatestCreditCardOrderProductsIntent(question)) {
@@ -375,6 +413,231 @@ public class ChatService {
         return details;
     }
 
+    private Optional<ChatResponse> answerReviewMutationIntent(String question, ChatSession session, long startTime) {
+        String normalized = normalizeIntentText(question);
+        boolean mentionsReview = normalized.contains("yorum") || normalized.contains("review");
+        boolean asksAdd = mentionsReview && (
+                normalized.contains("yorum yap")
+                        || normalized.contains("yorum ekle")
+                        || normalized.contains("yorum kaydet")
+                        || normalized.contains("review ekle")
+                        || normalized.contains("add review")
+                        || normalized.contains("write review")
+                        || normalized.contains("leave review")
+        );
+        boolean asksDelete = mentionsReview && (
+                normalized.contains("yorum sil")
+                        || normalized.contains("yorumumu sil")
+                        || normalized.contains("review sil")
+                        || normalized.contains("delete review")
+                        || normalized.contains("remove review")
+                        || normalized.contains("kaldir")
+                        || normalized.contains("kaldır")
+        );
+
+        if (!asksAdd && !asksDelete) {
+            return Optional.empty();
+        }
+
+        if (!"INDIVIDUAL".equals(session.role()) || session.userId() == null) {
+            return Optional.of(buildActionResponse(
+                    question,
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Review write scope restriction",
+                    "Review işlemleri yalnızca giriş yapmış müşteri hesapları için yapılabilir.",
+                    List.of(),
+                    startTime
+            ));
+        }
+        if (productRepository == null || reviewRepository == null || userRepository == null) {
+            return Optional.of(buildActionResponse(
+                    question,
+                    "ERROR",
+                    "ACTION",
+                    "Review action unavailable",
+                    "Review işlemi şu anda yapılandırılmamış.",
+                    List.of(),
+                    startTime
+            ));
+        }
+
+        return asksDelete
+                ? Optional.of(deleteOwnReview(question, session, startTime))
+                : Optional.of(addOwnReview(question, normalized, session, startTime));
+    }
+
+    private ChatResponse addOwnReview(String question, String normalized, ChatSession session, long startTime) {
+        Optional<Product> product = productRepository.findFirstMentionedByName(question);
+        if (product.isEmpty()) {
+            return buildActionResponse(
+                    question,
+                    "BLOCKED",
+                    "ACTION",
+                    "Product name required",
+                    "Yorum ekleyebilmem için ürün adını tam yazmalısınız. Örnek: Luna Vitamin C Serum için \"çok kötü\" diye 1 puanlı yorum yap.",
+                    List.of(),
+                    startTime
+            );
+        }
+        Optional<User> user = userRepository.findById(session.userId());
+        if (user.isEmpty()) {
+            return buildActionResponse(
+                    question,
+                    "BLOCKED",
+                    "ACTION",
+                    "Authenticated user not found",
+                    "Kullanıcı kaydı bulunamadığı için yorum eklenemedi.",
+                    List.of(),
+                    startTime
+            );
+        }
+
+        Review review = new Review();
+        review.setProduct(product.get());
+        review.setUser(user.get());
+        review.setRating(extractReviewRating(normalized));
+        review.setComment(extractReviewComment(question, product.get().getName()));
+        review.setHelpfulVotes(0);
+        review.setTotalVotes(0);
+        Review saved = reviewRepository.save(review);
+
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("review_id", saved.getId());
+        row.put("product_name", product.get().getName());
+        row.put("rating", saved.getRating());
+        row.put("comment", saved.getComment());
+        return buildActionResponse(
+                question,
+                "SUCCESS",
+                "ACTION",
+                "Review created",
+                product.get().getName() + " ürünü için yorumunuz kaydedildi.",
+                List.of(row),
+                startTime
+        );
+    }
+
+    private ChatResponse deleteOwnReview(String question, ChatSession session, long startTime) {
+        Optional<Product> product = productRepository.findFirstMentionedByName(question);
+        Optional<Review> review = product
+                .flatMap(value -> reviewRepository.findFirstByUser_IdAndProduct_IdOrderByCreatedAtDesc(session.userId(), value.getId()));
+        if (review.isEmpty()) {
+            List<Review> ownReviews = reviewRepository.findByUser_IdOrderByCreatedAtDesc(session.userId());
+            if (!ownReviews.isEmpty() && product.isEmpty()) {
+                review = Optional.of(ownReviews.get(0));
+            }
+        }
+        if (review.isEmpty()) {
+            return buildActionResponse(
+                    question,
+                    "BLOCKED",
+                    "ACTION",
+                    "Review not found",
+                    product.isPresent()
+                            ? product.get().getName() + " için size ait silinebilir yorum bulunamadı."
+                            : "Size ait silinebilir yorum bulunamadı. Belirli bir ürünü silmek için ürün adını da yazabilirsiniz.",
+                    List.of(),
+                    startTime
+            );
+        }
+
+        Review deleted = review.get();
+        String productName = deleted.getProduct().getName();
+        Long reviewId = deleted.getId();
+        reviewRepository.delete(deleted);
+
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("deleted_review_id", reviewId);
+        row.put("product_name", productName);
+        return buildActionResponse(
+                question,
+                "SUCCESS",
+                "ACTION",
+                "Review deleted",
+                productName + " için kendi yorumunuz silindi.",
+                List.of(row),
+                startTime
+        );
+    }
+
+    private ChatResponse buildActionResponse(
+            String question,
+            String status,
+            String agent,
+            String detectionType,
+            String finalAnswer,
+            List<Map<String, Object>> rows,
+            long startTime
+    ) {
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                null,
+                rows,
+                detectionType,
+                elapsedMs(startTime),
+                status,
+                agent,
+                detectionType,
+                null,
+                Map.of(),
+                chatAnalysisService.escapeHtml(finalAnswer),
+                "NONE",
+                Map.of(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private int extractReviewRating(String normalized) {
+        Matcher matcher = Pattern.compile("\\b([1-5])\\s*(?:puan|yildiz|star|/5)?\\b").matcher(normalized);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        if (normalized.contains("cok kotu") || normalized.contains("berbat") || normalized.contains("terrible")) {
+            return 1;
+        }
+        if (normalized.contains("kotu") || normalized.contains("bad")) {
+            return 2;
+        }
+        if (normalized.contains("orta") || normalized.contains("average")) {
+            return 3;
+        }
+        if (normalized.contains("iyi") || normalized.contains("good")) {
+            return 4;
+        }
+        if (normalized.contains("harika") || normalized.contains("mukemmel") || normalized.contains("excellent") || normalized.contains("great")) {
+            return 5;
+        }
+        return 3;
+    }
+
+    private String extractReviewComment(String question, String productName) {
+        Matcher quoted = Pattern.compile("[\"']([^\"']{1,1000})[\"']").matcher(question);
+        if (quoted.find()) {
+            return quoted.group(1).trim();
+        }
+
+        Matcher turkish = Pattern.compile("(?i)(?:için|icin)\\s+(.+?)\\s+(?:diye\\s+)?(?:yorum|review)").matcher(question);
+        if (turkish.find()) {
+            return cleanReviewComment(turkish.group(1), productName);
+        }
+
+        String comment = question.replace(productName, "");
+        return cleanReviewComment(comment, productName);
+    }
+
+    private String cleanReviewComment(String value, String productName) {
+        String cleaned = value == null ? "" : value
+                .replace(productName, "")
+                .replaceAll("(?i)\\b(?:icin|için|diye|yorum|review|yap|ekle|kaydet|puan|puanli|puanlı|yildiz|yıldız|star|add|write|leave)\\b", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (cleaned.isBlank()) {
+            return "Chatbot üzerinden eklenen yorum.";
+        }
+        return cleaned.length() > 1000 ? cleaned.substring(0, 1000) : cleaned;
+    }
+
     private boolean isCurrentMonthTopProductsIntent(String question) {
         String normalized = normalizeIntentText(question);
         boolean asksTopSelling =
@@ -389,6 +652,90 @@ public class ChatService {
                         || normalized.contains("magazamda en cok satan");
         boolean asksProduct = normalized.contains("urun") || normalized.contains("product");
         return asksTopSelling && asksProduct;
+    }
+
+    private boolean isLatestSellerOrderedProductsIntent(String question) {
+        String normalized = normalizeIntentText(question);
+        boolean sellerStoreQuestion = normalized.contains("magaza")
+                || normalized.contains("store")
+                || normalized.contains("magazam")
+                || normalized.contains("mağazam")
+                || normalized.contains("seller");
+        boolean asksLatest = normalized.contains("en son")
+                || normalized.contains("son siparis")
+                || normalized.contains("latest")
+                || normalized.contains("last");
+        boolean asksProduct = normalized.contains("urun") || normalized.contains("product");
+        boolean asksOrdered = normalized.contains("siparis")
+                || normalized.contains("ordered")
+                || normalized.contains("order")
+                || normalized.contains("satilan")
+                || normalized.contains("sold");
+        return sellerStoreQuestion && asksLatest && asksProduct && asksOrdered;
+    }
+
+    private ChatResponse answerLatestSellerOrderedProducts(String question, ChatSession session, long startTime) {
+        if (!"CORPORATE".equals(session.role()) || session.storeId() == null) {
+            return buildActionResponse(
+                    question,
+                    "BLOCKED",
+                    "GUARDRAIL",
+                    "Seller store scope restriction",
+                    "Bu soru yalnızca bağlı mağazası olan satıcı hesabı için yanıtlanabilir.",
+                    List.of(),
+                    startTime
+            );
+        }
+
+        int requestedLimit = extractRequestedLimit(question, 10);
+        List<Map<String, Object>> rows = chatAnalysisService.sanitizeRows(
+                queryExecutionService.executeQuery(LATEST_SELLER_ORDERED_PRODUCTS_SQL, session.storeId(), requestedLimit)
+        );
+        VisualizationPayload visualization = chatAnalysisService.buildVisualization(rows);
+        String displaySql = LATEST_SELLER_ORDERED_PRODUCTS_SQL
+                .replaceFirst("\\?", String.valueOf(session.storeId()))
+                .replaceFirst("\\?", String.valueOf(requestedLimit));
+
+        return new ChatResponse(
+                chatAnalysisService.escapeHtml(question),
+                chatAnalysisService.escapeHtml(displaySql),
+                rows,
+                "Latest ordered seller products query executed successfully.",
+                elapsedMs(startTime),
+                "SUCCESS",
+                "ANALYSIS",
+                null,
+                null,
+                buildSessionDetails(session),
+                chatAnalysisService.escapeHtml(buildLatestSellerOrderedProductsAnswer(rows, requestedLimit)),
+                visualization.visualizationType(),
+                visualization.chartData(),
+                PIPELINE_STEPS
+        );
+    }
+
+    private String buildLatestSellerOrderedProductsAnswer(List<Map<String, Object>> rows, int requestedLimit) {
+        if (rows == null || rows.isEmpty()) {
+            return "Mağazanız için sipariş edilmiş ürün bulunamadı.";
+        }
+
+        StringBuilder answer = new StringBuilder("Mağazanızdan en son sipariş edilen ")
+                .append(Math.min(requestedLimit, rows.size()))
+                .append(" ürün:");
+        for (int index = 0; index < rows.size(); index++) {
+            Map<String, Object> row = rows.get(index);
+            answer.append("\n")
+                    .append(index + 1)
+                    .append(". ")
+                    .append(row.get("product_name"))
+                    .append(" - sipariş #")
+                    .append(row.get("order_id"))
+                    .append(", adet: ")
+                    .append(row.get("quantity"))
+                    .append(", birim fiyat: ")
+                    .append(row.get("unit_price"));
+        }
+        return answer.toString();
     }
 
     private boolean isLatestCreditCardOrderProductsIntent(String question) {

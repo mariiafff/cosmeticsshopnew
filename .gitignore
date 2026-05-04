@@ -4,3 +4,9 @@
 .env
 **/.env
 *.env
+
+# Python virtual environments
+ai-service/.venv/
+ai-service/.venv-broken-old/
+ai-service/.venv-fresh-bad/
+.venv/

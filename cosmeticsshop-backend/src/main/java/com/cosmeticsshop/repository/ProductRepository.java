@@ -16,6 +16,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findBySku(String sku);
 
+    @Query(value = """
+            select *
+            from products p
+            where lower(:text) like concat('%', lower(p.name), '%')
+            order by length(p.name) desc
+            limit 1
+            """, nativeQuery = true)
+    Optional<Product> findFirstMentionedByName(@Param("text") String text);
+
     Page<Product> findByStore_IdIn(List<Long> storeIds, Pageable pageable);
 
     Page<Product> findByStatusIgnoreCase(String status, Pageable pageable);
