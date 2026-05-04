@@ -1,0 +1,59 @@
+@startuml
+title Backend UML - E-Commerce Analytics Platform
+
+package "Controller Layer" {
+  class AuthController
+  class ProductController
+  class ChatController
+  class AnalyticsController
+}
+
+package "Service Layer" {
+  class AuthService
+  class ProductService
+  class ChatService
+  class GeminiSqlService
+  class SqlSafetyService
+  class AnalyticsService
+}
+
+package "Repository Layer" {
+  interface UserRepository
+  interface ProductRepository
+  interface OrderRepository
+  interface StoreRepository
+}
+
+package "Entity Layer" {
+  class User
+  class Product
+  class Order
+  class OrderItem
+  class Review
+  class Store
+}
+
+AuthController --> AuthService
+ProductController --> ProductService
+ChatController --> ChatService
+AnalyticsController --> AnalyticsService
+
+AuthService --> UserRepository
+ProductService --> ProductRepository
+ProductService --> StoreRepository
+AnalyticsService --> OrderRepository
+ChatService --> GeminiSqlService
+ChatService --> SqlSafetyService
+
+UserRepository --> User
+ProductRepository --> Product
+OrderRepository --> Order
+StoreRepository --> Store
+
+Order --> OrderItem
+OrderItem --> Product
+Review --> Product
+Store --> Product
+User --> Store
+
+@enduml
